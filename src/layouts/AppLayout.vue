@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { Database, FolderGit2, LogOut, Rocket } from 'lucide-vue-next'
+import { Database, FolderGit2, LogOut, Rocket } from '@lucide/vue'
 import Logo from '@/components/Logo.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/features/auth/auth.store'

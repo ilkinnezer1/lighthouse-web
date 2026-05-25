@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {useRouter} from 'vue-router'
-import {FolderGit2, GitBranch, Plus, RotateCcw} from 'lucide-vue-next'
+import {FolderGit2, GitBranch, Plus, RotateCcw} from '@lucide/vue'
 import {useProjects} from './projects.queries'
 import CreateProjectDialog from './CreateProjectDialog.vue'
 import {relativeTime} from '@/lib/time'

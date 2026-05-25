@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
   ArrowLeft,
+  ChevronRight,
   Copy,
   Eye,
   EyeOff,
@@ -10,7 +11,7 @@ import {
   LoaderCircle,
   RotateCcw,
   Trash2,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useDeleteProject, useProject } from './projects.queries'
 import { relativeTime } from '@/lib/time'
@@ -162,10 +163,11 @@ async function onDelete() {
       <section class="mt-8">
         <h2 class="text-sm font-semibold tracking-tight text-foreground">Environments</h2>
         <div class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border">
-          <div
+          <RouterLink
             v-for="env in project.environments ?? []"
             :key="env.id"
-            class="flex items-center justify-between gap-3 bg-card px-4 py-3"
+            :to="`/projects/${project.id}/env/${env.id}`"
+            class="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/40"
           >
             <div class="flex items-center gap-3">
               <Badge :variant="envBadge[env.type]" class="font-mono">{{ env.name }}</Badge>
@@ -173,8 +175,8 @@ async function onDelete() {
                 {{ env.branch ?? '—' }}
               </span>
             </div>
-            <span class="text-xs text-muted-foreground/60">deployments soon</span>
-          </div>
+            <ChevronRight class="size-4 text-muted-foreground" />
+          </RouterLink>
           <p
             v-if="!project.environments?.length"
             class="bg-card px-4 py-6 text-center text-sm text-muted-foreground"

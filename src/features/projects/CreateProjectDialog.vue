@@ -2,7 +2,7 @@
 import { watch } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
-import { LoaderCircle } from 'lucide-vue-next'
+import { LoaderCircle } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { createProjectSchema } from './projects.schemas'
 import { useCreateProject } from './projects.queries'

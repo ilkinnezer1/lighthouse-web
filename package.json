@@ -9,13 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lucide/vue": "^1.16.0",
     "@tanstack/vue-query": "^5.100.14",
     "@vee-validate/zod": "^4.15.1",
     "@vueuse/core": "^14.3.0",
     "axios": "^1.16.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-vue-next": "^1.0.0",
     "pinia": "^3.0.4",
     "reka-ui": "^2.9.8",
     "socket.io-client": "^4.8.3",

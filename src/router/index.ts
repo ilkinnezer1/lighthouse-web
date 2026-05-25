@@ -35,6 +35,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/features/projects/ProjectDetailView.vue'),
         props: true,
       },
+      {
+        path: 'projects/:projectId/env/:envId',
+        name: 'environment',
+        component: () => import('@/features/deployments/EnvironmentView.vue'),
+        props: true,
+      },
+      {
+        path: 'deployments/:id',
+        name: 'deployment',
+        component: () => import('@/features/deployments/DeploymentDetailView.vue'),
+        props: true,
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
