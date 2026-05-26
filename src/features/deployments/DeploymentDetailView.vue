@@ -6,6 +6,7 @@ import { ArrowLeft, Ban, ExternalLink, RotateCcw } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { deploymentKeys, useCancelDeployment, useDeployment } from './deployments.queries'
 import { useDeploymentLogs } from './useDeploymentLogs'
+import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
 import { type StatusTone, isTerminalStatus, stageTone, titleCase } from './deployments.status'
 import { relativeTime } from '@/lib/time'
@@ -197,7 +198,7 @@ async function onCancel() {
             :key="entry.id"
             class="whitespace-pre-wrap wrap-break-word text-foreground/90"
           >
-            <span v-if="entry.stage" class="mr-2 text-muted-foreground/60">[{{ entry.stage }}]</span>{{ entry.line }}
+            <span v-if="entry.stage" class="mr-2 text-muted-foreground/60">[{{ entry.stage }}]</span><AnsiLine :text="entry.line" />
           </div>
         </div>
       </section>
