@@ -195,7 +195,7 @@ async function onCancel() {
           <div
             v-for="entry in logs"
             :key="entry.id"
-            class="whitespace-pre-wrap break-words text-foreground/90"
+            class="whitespace-pre-wrap wrap-break-word text-foreground/90"
           >
             <span v-if="entry.stage" class="mr-2 text-muted-foreground/60">[{{ entry.stage }}]</span>{{ entry.line }}
           </div>
