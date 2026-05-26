@@ -10,10 +10,12 @@ import {
   GitBranch,
   LoaderCircle,
   RotateCcw,
+  Settings2,
   Trash2,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useDeleteProject, useProject } from './projects.queries'
+import ProjectSettingsDialog from './ProjectSettingsDialog.vue'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { EnvironmentType } from '@/types/api'
@@ -39,6 +41,7 @@ const { data: project, isPending, isError, error, refetch } = useProject(() => p
 const deleteProject = useDeleteProject()
 
 const showSecret = ref(false)
+const showSettings = ref(false)
 const webhookUrl = computed(() => `${window.location.origin}/webhooks/github`)
 
 const envBadge: Record<EnvironmentType, 'default' | 'secondary' | 'outline'> = {
@@ -110,7 +113,12 @@ async function onDelete() {
           </a>
         </div>
 
-        <AlertDialog>
+        <div class="flex items-center gap-2">
+          <Button variant="outline" size="sm" @click="showSettings = true">
+            <Settings2 />
+            Settings
+          </Button>
+          <AlertDialog>
           <AlertDialogTrigger as-child>
             <Button variant="outline" size="sm" class="text-destructive hover:text-destructive">
               <Trash2 />
@@ -138,6 +146,7 @@ async function onDelete() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </header>
 
       <!-- meta -->
@@ -237,6 +246,8 @@ async function onDelete() {
           </div>
         </div>
       </section>
+
+      <ProjectSettingsDialog v-model:open="showSettings" :project="project" />
     </template>
   </div>
 </template>
