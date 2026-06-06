@@ -255,6 +255,16 @@ export interface ListDatabasesParams {
   projectId?: string
 }
 
+export interface EnvVar {
+  key: string
+  value: string
+}
+
+export interface SetEnvVarsInput {
+  vars?: Record<string, string>
+  dotenv?: string
+}
+
 export interface LoginInput {
   email: string
   password: string
