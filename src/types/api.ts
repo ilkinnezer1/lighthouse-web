@@ -109,6 +109,28 @@ export interface Service {
   status: string | null
 }
 
+export interface RepoBranch {
+  name: string
+  sha: string
+}
+
+export interface BranchMeta {
+  aheadBy: number | null
+  behindBy: number | null
+  lastCommitDate: string | null
+}
+
+export type DeploymentBranchRole = 'SOURCE' | 'MERGE'
+
+export interface DeploymentBranch {
+  id: string
+  deploymentId: string
+  role: DeploymentBranchRole
+  name: string
+  sha: string | null
+  ordinal: number
+}
+
 export interface Deployment {
   id: string
   environmentId: string
@@ -124,9 +146,46 @@ export interface Deployment {
   errorSummary: string | null
   createdAt: string
   url: string
+  branches?: DeploymentBranch[]
   stages?: DeploymentStage[]
   services?: Service[]
   environment?: Environment
+}
+
+export interface DeploymentListItem {
+  id: string
+  environmentId: string
+  status: DeploymentStatus
+  commitSha: string | null
+  commitMessage: string | null
+  commitAuthor: string | null
+  createdAt: string
+  url: string
+  branches: DeploymentBranch[]
+  environment: {
+    id: string
+    name: string
+    subdomain: string
+    customDomain: string | null
+    project: {
+      id: string
+      name: string
+      subdomain: string
+      owner: { username: string }
+    }
+  }
+}
+
+export interface DeploymentListPage {
+  items: DeploymentListItem[]
+  nextCursor: string | null
+}
+
+export interface ListDeploymentsParams {
+  limit?: number
+  cursor?: string
+  status?: DeploymentStatus
+  projectId?: string
 }
 
 export interface ManagedDatabase {
@@ -190,6 +249,11 @@ export type CreateDatabaseInput =
     }
   | { mode: 'copy'; sourceDatabaseId: string; name: string }
   | { mode: 'create-from-snapshot'; snapshotId: string; name: string }
+
+export interface CreateDeploymentInput {
+  sourceBranch?: string
+  mergeBranches?: string[]
+}
 
 export interface LogEntry {
   id: string

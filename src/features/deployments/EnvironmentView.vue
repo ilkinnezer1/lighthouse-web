@@ -2,17 +2,17 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { ArrowLeft, ChevronRight, Database, Plus, Rocket, RotateCcw } from '@lucide/vue'
-import { toast } from 'vue-sonner'
 import { useProject } from '@/features/projects/projects.queries'
-import { useCreateDeployment, useDeployments } from './deployments.queries'
+import { useDeployments } from './deployments.queries'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
+import DeployDialog from './DeployDialog.vue'
 import { useDatabases } from '@/features/databases/databases.queries'
 import StatusBadge from '@/features/databases/StatusBadge.vue'
 import { databaseTone, titleCase } from '@/features/databases/databases.status'
 import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
-import type { ManagedDatabase } from '@/types/api'
+import type { Deployment, ManagedDatabase } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -36,16 +36,10 @@ const {
   error,
   refetch,
 } = useDeployments(() => props.envId)
-const createDeployment = useCreateDeployment(() => props.envId)
 
-async function onDeploy() {
-  try {
-    const dep = await createDeployment.mutateAsync()
-    toast.success('Deployment queued')
-    router.push(`/deployments/${dep.id}`)
-  } catch (e) {
-    toast.error(apiErrorMessage(e, 'Could not start deployment'))
-  }
+const showDeploy = ref(false)
+function onDeployed(dep: Deployment) {
+  router.push(`/deployments/${dep.id}`)
 }
 
 const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
@@ -68,7 +62,7 @@ const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
         </h1>
         <Badge v-if="env" variant="secondary" class="font-mono">{{ env.branch ?? '—' }}</Badge>
       </div>
-      <Button :disabled="createDeployment.isPending.value" @click="onDeploy">
+      <Button @click="showDeploy = true">
         <Rocket />
         Deploy
       </Button>
@@ -183,6 +177,14 @@ const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
       :project="project"
       :env-id="envId"
       @created="onDbCreated"
+    />
+
+    <DeployDialog
+      v-model:open="showDeploy"
+      :project-id="projectId"
+      :env-id="envId"
+      :default-branch="env?.branch ?? null"
+      @deployed="onDeployed"
     />
   </div>
 </template>

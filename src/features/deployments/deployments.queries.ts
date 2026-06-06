@@ -1,16 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import type { CreateDeploymentInput } from '@/types/api'
 import {
   cancelDeployment,
   createDeployment,
   getDeployment,
+  listAllDeployments,
   listDeployments,
 } from './deployments.api'
 import { isTerminalStatus } from './deployments.status'
 
 export const deploymentKeys = {
+  all: ['deployments', 'all'] as const,
   byEnv: (envId: string) => ['deployments', 'env', envId] as const,
   detail: (id: string) => ['deployments', id] as const,
+}
+
+export function useAllDeployments() {
+  return useQuery({
+    queryKey: deploymentKeys.all,
+    queryFn: () => listAllDeployments(),
+    select: (page) => page.items,
+  })
 }
 
 export function useDeployments(envId: MaybeRefOrGetter<string>) {
@@ -35,7 +46,7 @@ export function useDeployment(id: MaybeRefOrGetter<string>) {
 export function useCreateDeployment(envId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => createDeployment(toValue(envId)),
+    mutationFn: (input?: CreateDeploymentInput) => createDeployment(toValue(envId), input),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: deploymentKeys.byEnv(toValue(envId)) }),
   })

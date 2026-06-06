@@ -5,6 +5,7 @@ import {
   createProject,
   deleteProject,
   getProject,
+  listProjectBranches,
   listProjects,
   updateProject,
 } from './projects.api'
@@ -12,6 +13,7 @@ import {
 export const projectKeys = {
   all: ['projects'] as const,
   detail: (id: string) => ['projects', id] as const,
+  branches: (id: string) => ['projects', id, 'branches'] as const,
 }
 
 export function useProjects() {
@@ -25,6 +27,18 @@ export function useProject(id: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => projectKeys.detail(toValue(id))),
     queryFn: () => getProject(toValue(id)),
+  })
+}
+
+export function useProjectBranches(
+  id: MaybeRefOrGetter<string>,
+  enabled?: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery({
+    queryKey: computed(() => projectKeys.branches(toValue(id))),
+    queryFn: () => listProjectBranches(toValue(id)),
+    enabled: computed(() => (enabled === undefined ? true : toValue(enabled))),
+    staleTime: 60_000,
   })
 }
 

@@ -1,0 +1,113 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { Check, Search } from '@lucide/vue'
+import type { BranchMeta, RepoBranch } from '@/types/api'
+import { relativeTime } from '@/lib/time'
+
+const props = defineProps<{
+  branches: RepoBranch[]
+  exclude?: string
+  loading?: boolean
+  error?: string | null
+  meta?: Record<string, BranchMeta>
+}>()
+
+const selected = defineModel<string[]>({ required: true })
+
+const search = ref('')
+
+const visible = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  return props.branches
+    .filter((b) => b.name !== props.exclude)
+    .filter((b) => !q || b.name.toLowerCase().includes(q))
+})
+
+function toggle(name: string) {
+  const next = new Set(selected.value)
+  if (next.has(name)) next.delete(name)
+  else next.add(name)
+  selected.value = [...next]
+}
+
+const isSelected = (name: string) => selected.value.includes(name)
+const shortSha = (sha: string) => sha.slice(0, 7)
+const metaFor = (name: string) => props.meta?.[name] ?? null
+</script>
+
+<template>
+  <div class="rounded-lg border border-border">
+    <div class="flex items-center gap-2 border-b border-border px-3 py-2">
+      <Search class="size-4 shrink-0 text-muted-foreground" />
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search branches…"
+        class="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+      />
+    </div>
+
+    <div class="max-h-56 overflow-auto p-1">
+      <p v-if="loading" class="px-2 py-6 text-center text-sm text-muted-foreground">
+        Loading branches…
+      </p>
+      <p v-else-if="error" class="px-2 py-6 text-center text-sm text-destructive">
+        {{ error }}
+      </p>
+      <p
+        v-else-if="visible.length === 0"
+        class="px-2 py-6 text-center text-sm text-muted-foreground"
+      >
+        {{ search ? 'No matching branches.' : 'No other branches to merge.' }}
+      </p>
+      <button
+        v-for="b in visible"
+        v-else
+        :key="b.name"
+        type="button"
+        class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent/50"
+        @click="toggle(b.name)"
+      >
+        <span
+          class="flex size-4 shrink-0 items-center justify-center rounded border transition-colors"
+          :class="
+            isSelected(b.name)
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-muted-foreground/40'
+          "
+        >
+          <Check v-if="isSelected(b.name)" class="size-3" />
+        </span>
+        <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">{{ b.name }}</span>
+        <template v-if="metaFor(b.name)">
+          <span
+            v-if="(metaFor(b.name)?.aheadBy ?? 0) > 0"
+            class="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+          >
+            {{ metaFor(b.name)?.aheadBy }} ahead
+          </span>
+          <span
+            v-else
+            class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+          >
+            actual
+          </span>
+          <span
+            v-if="metaFor(b.name)?.lastCommitDate"
+            class="hidden shrink-0 text-xs text-muted-foreground sm:inline"
+          >
+            {{ relativeTime(metaFor(b.name)!.lastCommitDate!) }}
+          </span>
+        </template>
+        <span class="shrink-0 font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) }}</span>
+      </button>
+    </div>
+
+    <div
+      v-if="selected.length"
+      class="border-t border-border px-3 py-1.5 text-xs text-muted-foreground"
+    >
+      {{ selected.length }} branch{{ selected.length === 1 ? '' : 'es' }} to merge
+    </div>
+  </div>
+</template>

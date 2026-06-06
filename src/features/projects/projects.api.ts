@@ -1,5 +1,10 @@
 import { api } from '@/lib/api'
-import type { CreateProjectInput, Project, UpdateProjectInput } from '@/types/api'
+import type {
+  CreateProjectInput,
+  Project,
+  RepoBranch,
+  UpdateProjectInput,
+} from '@/types/api'
 
 export async function listProjects() {
   const { data } = await api.get<Project[]>('/projects')
@@ -23,4 +28,9 @@ export async function updateProject(id: string, input: UpdateProjectInput) {
 
 export async function deleteProject(id: string) {
   await api.delete(`/projects/${id}`)
+}
+
+export async function listProjectBranches(id: string) {
+  const { data } = await api.get<RepoBranch[]>(`/projects/${id}/branches`)
+  return data
 }

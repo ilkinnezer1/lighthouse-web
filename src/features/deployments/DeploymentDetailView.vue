@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
-import { ArrowLeft, Ban, ExternalLink, RotateCcw } from '@lucide/vue'
+import { ArrowLeft, Ban, ExternalLink, GitBranch, GitMerge, RotateCcw } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { deploymentKeys, useCancelDeployment, useDeployment } from './deployments.queries'
 import { useDeploymentLogs } from './useDeploymentLogs'
@@ -32,6 +32,14 @@ const liveUrl = computed(() => {
   const d = deployment.value
   return d && (d.status === 'RUNNING' || d.status === 'SUCCEEDED') ? d.url : null
 })
+
+const sourceBranch = computed(
+  () => deployment.value?.branches?.find((b) => b.role === 'SOURCE') ?? null,
+)
+const mergeBranches = computed(
+  () => deployment.value?.branches?.filter((b) => b.role === 'MERGE') ?? [],
+)
+const hasBranchSet = computed(() => !!sourceBranch.value || mergeBranches.value.length > 0)
 
 const dotClass: Record<StatusTone, string> = {
   queued: 'bg-muted-foreground/40',
@@ -136,6 +144,37 @@ async function onCancel() {
       >
         {{ deployment.errorSummary }}
       </p>
+
+      <section v-if="hasBranchSet" class="mt-6">
+        <h2 class="text-sm font-semibold tracking-tight text-foreground">Branches</h2>
+        <div class="mt-3 overflow-hidden rounded-xl border border-border">
+          <div
+            v-if="sourceBranch"
+            class="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
+          >
+            <GitBranch class="size-4 shrink-0 text-muted-foreground" />
+            <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
+              {{ sourceBranch.name }}
+            </span>
+            <span class="font-mono text-xs text-muted-foreground">
+              {{ shortSha(sourceBranch.sha) }}
+            </span>
+            <span class="text-xs text-primary">source</span>
+          </div>
+          <div
+            v-for="b in mergeBranches"
+            :key="b.id"
+            class="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
+          >
+            <GitMerge class="size-4 shrink-0 text-muted-foreground" />
+            <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
+              {{ b.name }}
+            </span>
+            <span class="font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) }}</span>
+            <span class="text-xs text-muted-foreground">merged</span>
+          </div>
+        </div>
+      </section>
 
       <!-- stages -->
       <section v-if="deployment.stages?.length" class="mt-6">
