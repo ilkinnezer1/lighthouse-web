@@ -120,6 +120,11 @@ export interface BranchMeta {
   lastCommitDate: string | null
 }
 
+// The branches endpoint returns name + sha, plus the BranchMeta fields when a
+// `base` is supplied (deltas relative to that source branch). Without a base,
+// the meta fields are absent — hence Partial.
+export type RepoBranchWithMeta = RepoBranch & Partial<BranchMeta>
+
 export type DeploymentBranchRole = 'SOURCE' | 'MERGE'
 
 export interface DeploymentBranch {

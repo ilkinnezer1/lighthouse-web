@@ -87,7 +87,7 @@ const metaFor = (name: string) => props.meta?.[name] ?? null
             {{ metaFor(b.name)?.aheadBy }} ahead
           </span>
           <span
-            v-else
+            v-else-if="metaFor(b.name)?.aheadBy === 0"
             class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
           >
             actual

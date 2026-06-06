@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import type { CreateProjectInput, UpdateProjectInput } from '@/types/api'
 import {
@@ -13,7 +18,8 @@ import {
 export const projectKeys = {
   all: ['projects'] as const,
   detail: (id: string) => ['projects', id] as const,
-  branches: (id: string) => ['projects', id, 'branches'] as const,
+  branches: (id: string, base?: string) =>
+    ['projects', id, 'branches', base ?? null] as const,
 }
 
 export function useProjects() {
@@ -32,13 +38,24 @@ export function useProject(id: MaybeRefOrGetter<string>) {
 
 export function useProjectBranches(
   id: MaybeRefOrGetter<string>,
-  enabled?: MaybeRefOrGetter<boolean>,
+  opts?: {
+    base?: MaybeRefOrGetter<string | undefined>
+    enabled?: MaybeRefOrGetter<boolean>
+  },
 ) {
   return useQuery({
-    queryKey: computed(() => projectKeys.branches(toValue(id))),
-    queryFn: () => listProjectBranches(toValue(id)),
-    enabled: computed(() => (enabled === undefined ? true : toValue(enabled))),
+    queryKey: computed(() =>
+      projectKeys.branches(toValue(id), toValue(opts?.base) || undefined),
+    ),
+    queryFn: () =>
+      listProjectBranches(toValue(id), toValue(opts?.base) || undefined),
+    enabled: computed(() =>
+      opts?.enabled === undefined ? true : toValue(opts.enabled),
+    ),
     staleTime: 60_000,
+    // Keep the prior rows visible while deltas refetch on a source change, so
+    // the picker doesn't flash empty.
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -3,11 +3,10 @@ import { computed, ref, watch } from 'vue'
 import { GitMerge, LoaderCircle, Rocket } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import BranchPicker from './BranchPicker.vue'
-import { mockBranchMeta } from './branchMeta.mock'
 import { useCreateDeployment } from './deployments.queries'
 import { useProjectBranches } from '@/features/projects/projects.queries'
 import { apiErrorMessage } from '@/lib/api'
-import type { Deployment } from '@/types/api'
+import type { BranchMeta, Deployment } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -35,10 +34,16 @@ const emit = defineEmits<{ deployed: [deployment: Deployment] }>()
 
 const createDeployment = useCreateDeployment(() => props.envId)
 
-const branchesQuery = useProjectBranches(
-  () => props.projectId,
-  () => open.value,
-)
+const sourceBranch = ref('')
+const mergeBranches = ref<string[]>([])
+const advanced = ref(false)
+
+// Deltas are relative to the selected source, so the source drives the query's
+// `base`; changing it refetches the rows with new ahead/behind numbers.
+const branchesQuery = useProjectBranches(() => props.projectId, {
+  base: () => sourceBranch.value || undefined,
+  enabled: () => open.value,
+})
 const branches = computed(() => branchesQuery.data.value ?? [])
 const branchError = computed(() =>
   branchesQuery.isError.value
@@ -46,11 +51,17 @@ const branchError = computed(() =>
     : null,
 )
 
-const sourceBranch = ref('')
-const mergeBranches = ref<string[]>([])
-const advanced = ref(false)
-
-const branchMeta = computed(() => mockBranchMeta(branches.value, sourceBranch.value))
+const branchMeta = computed<Record<string, BranchMeta>>(() => {
+  const out: Record<string, BranchMeta> = {}
+  for (const b of branches.value) {
+    out[b.name] = {
+      aheadBy: b.aheadBy ?? null,
+      behindBy: b.behindBy ?? null,
+      lastCommitDate: b.lastCommitDate ?? null,
+    }
+  }
+  return out
+})
 
 watch(open, (isOpen) => {
   if (isOpen) {
