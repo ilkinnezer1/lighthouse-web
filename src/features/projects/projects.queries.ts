@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/vue-query'
-import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { computed, type MaybeRefOrGetter, ref, toValue } from 'vue'
 import type { CreateProjectInput, UpdateProjectInput } from '@/types/api'
 import {
   createProject,
@@ -43,7 +43,8 @@ export function useProjectBranches(
     enabled?: MaybeRefOrGetter<boolean>
   },
 ) {
-  return useQuery({
+  const qc = useQueryClient()
+  const query = useQuery({
     queryKey: computed(() =>
       projectKeys.branches(toValue(id), toValue(opts?.base) || undefined),
     ),
@@ -53,10 +54,24 @@ export function useProjectBranches(
       opts?.enabled === undefined ? true : toValue(opts.enabled),
     ),
     staleTime: 60_000,
-    // Keep the prior rows visible while deltas refetch on a source change, so
-    // the picker doesn't flash empty.
     placeholderData: keepPreviousData,
   })
+
+  const isRefreshing = ref(false)
+  async function refresh() {
+    const projectId = toValue(id)
+    const base = toValue(opts?.base) || undefined
+    isRefreshing.value = true
+    try {
+      const data = await listProjectBranches(projectId, base, true)
+      qc.setQueryData(projectKeys.branches(projectId, base), data)
+      return data
+    } finally {
+      isRefreshing.value = false
+    }
+  }
+
+  return Object.assign(query, { refresh, isRefreshing })
 }
 
 export function useCreateProject() {

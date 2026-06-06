@@ -42,6 +42,11 @@ const routes: RouteRecordRaw[] = [
         props: true,
       },
       {
+        path: 'databases',
+        name: 'databases',
+        component: () => import('@/features/databases/DatabasesView.vue'),
+      },
+      {
         path: 'projects/:projectId/env/:envId/databases/:databaseId',
         name: 'database',
         component: () => import('@/features/databases/DatabaseDetailView.vue'),

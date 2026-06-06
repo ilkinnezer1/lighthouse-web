@@ -218,6 +218,43 @@ export interface DatabaseSnapshot {
   createdAt: string
 }
 
+export interface DatabaseListItem {
+  id: string
+  type: DatabaseType
+  version: string
+  name: string
+  status: DatabaseStatus
+  ownsContainer: boolean
+  host: string | null
+  port: number | null
+  errorSummary: string | null
+  createdAt: string
+  updatedAt: string
+  environment: {
+    id: string
+    name: string
+    project: {
+      id: string
+      name: string
+      subdomain: string
+      owner: { username: string }
+    }
+  }
+}
+
+export interface DatabaseListPage {
+  items: DatabaseListItem[]
+  nextCursor: string | null
+}
+
+export interface ListDatabasesParams {
+  limit?: number
+  cursor?: string
+  status?: DatabaseStatus
+  type?: DatabaseType
+  projectId?: string
+}
+
 export interface LoginInput {
   email: string
   password: string

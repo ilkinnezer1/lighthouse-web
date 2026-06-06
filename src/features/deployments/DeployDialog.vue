@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { GitMerge, LoaderCircle, Rocket } from '@lucide/vue'
+import { GitMerge, LoaderCircle, RefreshCw, Rocket } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import BranchPicker from './BranchPicker.vue'
 import { useCreateDeployment } from './deployments.queries'
@@ -88,6 +88,15 @@ watch(branches, (list) => {
 
 const isPending = computed(() => createDeployment.isPending.value)
 
+async function onFetch() {
+  try {
+    await branchesQuery.refresh()
+    toast.success('Fetched latest commits')
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Could not fetch branches'))
+  }
+}
+
 async function onDeploy() {
   const source = sourceBranch.value || props.defaultBranch || undefined
   const merges = mergeBranches.value
@@ -121,7 +130,18 @@ async function onDeploy() {
 
       <div class="grid gap-4 py-1">
         <div class="grid gap-2">
-          <span class="text-sm font-medium text-foreground">Source branch</span>
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-foreground">Source branch</span>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+              :disabled="branchesQuery.isRefreshing.value || branchesQuery.isPending.value"
+              @click="onFetch"
+            >
+              <RefreshCw class="size-3.5" :class="{ 'animate-spin': branchesQuery.isRefreshing.value }" />
+              Fetch
+            </button>
+          </div>
           <Select v-model="sourceBranch" :disabled="branchesQuery.isPending.value || !!branchError">
             <SelectTrigger class="w-full font-mono">
               <SelectValue :placeholder="defaultBranch ?? 'Select a branch'" />

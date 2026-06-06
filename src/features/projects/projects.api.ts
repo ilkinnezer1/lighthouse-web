@@ -30,10 +30,15 @@ export async function deleteProject(id: string) {
   await api.delete(`/projects/${id}`)
 }
 
-export async function listProjectBranches(id: string, base?: string) {
+export async function listProjectBranches(id: string, base?: string, refresh?: boolean) {
   const { data } = await api.get<RepoBranchWithMeta[]>(
     `/projects/${id}/branches`,
-    { params: base ? { base } : undefined },
+    {
+      params: {
+        ...(base ? { base } : {}),
+        ...(refresh ? { refresh: 1 } : {}),
+      },
+    },
   )
   return data
 }

@@ -49,11 +49,14 @@ const navBase =
           Deployments
         </RouterLink>
 
-        <span :class="[navBase, 'cursor-not-allowed text-muted-foreground/45']">
+        <RouterLink
+          to="/databases"
+          :class="[navBase, 'text-muted-foreground hover:bg-accent hover:text-foreground']"
+          active-class="bg-accent! text-foreground!"
+        >
           <Database class="size-4" />
           Databases
-          <span class="ml-auto text-[10px] uppercase tracking-wide">soon</span>
-        </span>
+        </RouterLink>
       </nav>
 
       <div class="border-t border-border p-3">

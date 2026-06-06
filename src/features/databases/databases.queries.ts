@@ -1,17 +1,56 @@
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
-import type { CreateDatabaseInput, ManagedDatabase } from '@/types/api'
+import type {
+  CreateDatabaseInput,
+  DatabaseStatus,
+  DatabaseType,
+  ManagedDatabase,
+} from '@/types/api'
 import {
   createDatabase,
   deleteDatabase,
   getDatabase,
+  listAllDatabases,
   listDatabases,
 } from './databases.api'
 import { isDatabasePending } from './databases.status'
 
 export const databaseKeys = {
+  all: ['databases'] as const,
   byEnv: (envId: string) => ['databases', 'env', envId] as const,
   detail: (id: string) => ['databases', id] as const,
+}
+
+export function useDatabasesFeed(filters: {
+  status?: MaybeRefOrGetter<DatabaseStatus | undefined>
+  type?: MaybeRefOrGetter<DatabaseType | undefined>
+  projectId?: MaybeRefOrGetter<string | undefined>
+}) {
+  return useInfiniteQuery({
+    queryKey: computed(() => [
+      ...databaseKeys.all,
+      'feed',
+      toValue(filters.status) ?? null,
+      toValue(filters.type) ?? null,
+      toValue(filters.projectId) ?? null,
+    ]),
+    queryFn: ({ pageParam }) =>
+      listAllDatabases({
+        cursor: (pageParam as string) || undefined,
+        status: toValue(filters.status),
+        type: toValue(filters.type),
+        projectId: toValue(filters.projectId),
+        limit: 30,
+      }),
+    initialPageParam: '',
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  })
 }
 
 export function useDatabases(envId: MaybeRefOrGetter<string>) {
