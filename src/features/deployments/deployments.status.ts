@@ -1,5 +1,7 @@
 import type { DeploymentStageStatus, DeploymentStatus } from '@/types/api'
 
+export { titleCase } from '@/lib/utils'
+
 export type StatusTone = 'queued' | 'active' | 'success' | 'error' | 'neutral'
 
 const TERMINAL: readonly string[] = ['SUCCEEDED', 'FAILED', 'CANCELLED']
@@ -29,6 +31,10 @@ export const stageTone: Record<DeploymentStageStatus, StatusTone> = {
   ROLLED_BACK: 'error',
 }
 
-export function titleCase(s: string): string {
-  return s.charAt(0) + s.slice(1).toLowerCase()
+export const statusDotClass: Record<StatusTone, string> = {
+  queued: 'bg-muted-foreground/40',
+  active: 'bg-primary animate-pulse',
+  success: 'bg-success',
+  error: 'bg-destructive',
+  neutral: 'bg-muted-foreground/40',
 }

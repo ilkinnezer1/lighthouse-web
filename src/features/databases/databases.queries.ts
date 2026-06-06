@@ -1,11 +1,6 @@
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/vue-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { useCursorFeed } from '@/lib/feed'
 import type {
   CreateDatabaseInput,
   DatabaseStatus,
@@ -32,7 +27,7 @@ export function useDatabasesFeed(filters: {
   type?: MaybeRefOrGetter<DatabaseType | undefined>
   projectId?: MaybeRefOrGetter<string | undefined>
 }) {
-  return useInfiniteQuery({
+  return useCursorFeed({
     queryKey: computed(() => [
       ...databaseKeys.all,
       'feed',
@@ -40,16 +35,14 @@ export function useDatabasesFeed(filters: {
       toValue(filters.type) ?? null,
       toValue(filters.projectId) ?? null,
     ]),
-    queryFn: ({ pageParam }) =>
+    fetchPage: (cursor) =>
       listAllDatabases({
-        cursor: (pageParam as string) || undefined,
+        cursor,
         status: toValue(filters.status),
         type: toValue(filters.type),
         projectId: toValue(filters.projectId),
         limit: 30,
       }),
-    initialPageParam: '',
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
 }
 

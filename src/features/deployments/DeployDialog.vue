@@ -5,8 +5,9 @@ import { toast } from 'vue-sonner'
 import BranchPicker from './BranchPicker.vue'
 import { useCreateDeployment } from './deployments.queries'
 import { useProjectBranches } from '@/features/projects/projects.queries'
+import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { apiErrorMessage } from '@/lib/api'
-import type { BranchMeta, Deployment } from '@/types/api'
+import type { Deployment } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -38,8 +39,6 @@ const sourceBranch = ref('')
 const mergeBranches = ref<string[]>([])
 const advanced = ref(false)
 
-// Deltas are relative to the selected source, so the source drives the query's
-// `base`; changing it refetches the rows with new ahead/behind numbers.
 const branchesQuery = useProjectBranches(() => props.projectId, {
   base: () => sourceBranch.value || undefined,
   enabled: () => open.value,
@@ -51,17 +50,7 @@ const branchError = computed(() =>
     : null,
 )
 
-const branchMeta = computed<Record<string, BranchMeta>>(() => {
-  const out: Record<string, BranchMeta> = {}
-  for (const b of branches.value) {
-    out[b.name] = {
-      aheadBy: b.aheadBy ?? null,
-      behindBy: b.behindBy ?? null,
-      lastCommitDate: b.lastCommitDate ?? null,
-    }
-  }
-  return out
-})
+const branchMeta = computed(() => toBranchMetaMap(branches.value))
 
 watch(open, (isOpen) => {
   if (isOpen) {

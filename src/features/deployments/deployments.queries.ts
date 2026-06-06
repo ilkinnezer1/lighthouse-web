@@ -1,10 +1,6 @@
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { useCursorFeed } from '@/lib/feed'
 import type { CreateDeploymentInput, DeploymentStatus } from '@/types/api'
 import {
   cancelDeployment,
@@ -33,22 +29,20 @@ export function useDeploymentsFeed(filters: {
   status?: MaybeRefOrGetter<DeploymentStatus | undefined>
   projectId?: MaybeRefOrGetter<string | undefined>
 }) {
-  return useInfiniteQuery({
+  return useCursorFeed({
     queryKey: computed(() => [
       ...deploymentKeys.all,
       'feed',
       toValue(filters.status) ?? null,
       toValue(filters.projectId) ?? null,
     ]),
-    queryFn: ({ pageParam }) =>
+    fetchPage: (cursor) =>
       listAllDeployments({
-        cursor: (pageParam as string) || undefined,
+        cursor,
         status: toValue(filters.status),
         projectId: toValue(filters.projectId),
         limit: 30,
       }),
-    initialPageParam: '',
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
 }
 

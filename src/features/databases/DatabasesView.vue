@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Database, RotateCcw } from '@lucide/vue'
 import { useDatabasesFeed } from './databases.queries'
 import { databaseTone, titleCase } from './databases.status'
 import StatusBadge from './StatusBadge.vue'
 import { useProjects } from '@/features/projects/projects.queries'
+import { useSelectFilter } from '@/lib/feed'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { DatabaseListItem, DatabaseStatus, DatabaseType } from '@/types/api'
@@ -21,18 +21,14 @@ import {
 
 const router = useRouter()
 
-const statusFilter = ref<DatabaseStatus | 'all'>('all')
-const typeFilter = ref<DatabaseType | 'all'>('all')
-const projectFilter = ref<string>('all')
-
-const status = computed(() => (statusFilter.value === 'all' ? undefined : statusFilter.value))
-const type = computed(() => (typeFilter.value === 'all' ? undefined : typeFilter.value))
-const projectId = computed(() => (projectFilter.value === 'all' ? undefined : projectFilter.value))
+const [statusFilter, status] = useSelectFilter<DatabaseStatus>()
+const [typeFilter, type] = useSelectFilter<DatabaseType>()
+const [projectFilter, projectId] = useSelectFilter<string>()
 
 const { data: projects } = useProjects()
 
 const feed = useDatabasesFeed({ status, type, projectId })
-const items = computed(() => feed.data.value?.pages.flatMap((p) => p.items) ?? [])
+const items = feed.items
 
 const typeOptions: DatabaseType[] = ['POSTGRES', 'MYSQL', 'REDIS', 'MONGO']
 const statusOptions: DatabaseStatus[] = ['READY', 'PROVISIONING', 'FAILED']

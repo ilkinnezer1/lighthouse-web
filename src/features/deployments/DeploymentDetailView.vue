@@ -8,11 +8,12 @@ import { deploymentKeys, useCancelDeployment, useDeployment } from './deployment
 import { useDeploymentLogs } from './useDeploymentLogs'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
-import { type StatusTone, isTerminalStatus, stageTone, titleCase } from './deployments.status'
+import { isTerminalStatus, stageTone, statusDotClass, titleCase } from './deployments.status'
 import { useProjectBranches } from '@/features/projects/projects.queries'
+import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { relativeTime } from '@/lib/time'
-import type { BranchMeta } from '@/types/api'
 import { apiErrorMessage } from '@/lib/api'
+import { shortSha } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -49,26 +50,8 @@ const branchMetaQuery = useProjectBranches(projectId, {
   base: () => sourceName.value,
   enabled: () => hasBranchSet.value && !!projectId.value && !!sourceName.value,
 })
-const branchMeta = computed<Record<string, BranchMeta>>(() => {
-  const out: Record<string, BranchMeta> = {}
-  for (const b of branchMetaQuery.data.value ?? []) {
-    out[b.name] = {
-      aheadBy: b.aheadBy ?? null,
-      behindBy: b.behindBy ?? null,
-      lastCommitDate: b.lastCommitDate ?? null,
-    }
-  }
-  return out
-})
+const branchMeta = computed(() => toBranchMetaMap(branchMetaQuery.data.value))
 const metaFor = (name: string) => branchMeta.value[name] ?? null
-
-const dotClass: Record<StatusTone, string> = {
-  queued: 'bg-muted-foreground/40',
-  active: 'bg-primary animate-pulse',
-  success: 'bg-success',
-  error: 'bg-destructive',
-  neutral: 'bg-muted-foreground/40',
-}
 
 const logEl = ref<HTMLElement | null>(null)
 watch(
@@ -78,8 +61,6 @@ watch(
     if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight
   },
 )
-
-const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
 
 async function onCancel() {
   try {
@@ -127,7 +108,7 @@ async function onCancel() {
           <div class="flex items-center gap-3">
             <DeploymentStatusBadge :status="deployment.status" />
             <span class="font-mono text-sm text-muted-foreground">
-              {{ shortSha(deployment.commitSha) }}
+              {{ shortSha(deployment.commitSha) ?? '—' }}
             </span>
           </div>
           <p class="mt-2 truncate text-foreground">
@@ -184,7 +165,7 @@ async function onCancel() {
               {{ relativeTime(metaFor(sourceBranch.name)!.lastCommitDate!) }}
             </span>
             <span class="font-mono text-xs text-muted-foreground">
-              {{ shortSha(sourceBranch.sha) }}
+              {{ shortSha(sourceBranch.sha) ?? '—' }}
             </span>
             <span class="text-xs text-primary">source</span>
           </div>
@@ -215,7 +196,7 @@ async function onCancel() {
             >
               {{ relativeTime(metaFor(b.name)!.lastCommitDate!) }}
             </span>
-            <span class="font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) }}</span>
+            <span class="font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) ?? '—' }}</span>
             <span class="text-xs text-muted-foreground">merged</span>
           </div>
         </div>
@@ -230,7 +211,7 @@ async function onCancel() {
             :key="stage.id"
             class="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
           >
-            <span class="size-2 rounded-full" :class="dotClass[stageTone[stage.status]]" />
+            <span class="size-2 rounded-full" :class="statusDotClass[stageTone[stage.status]]" />
             <span class="flex-1 font-mono text-sm text-foreground">{{ stage.name }}</span>
             <span class="text-xs text-muted-foreground">{{ titleCase(stage.status) }}</span>
           </li>

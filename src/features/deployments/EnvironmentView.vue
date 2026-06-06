@@ -1,25 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import {
-  ArrowLeft,
-  ChevronRight,
-  Database,
-  GitBranch,
-  GitMerge,
-  Plus,
-  Rocket,
-  RotateCcw,
-} from '@lucide/vue'
+import { ArrowLeft, ChevronRight, Database, Plus, Rocket, RotateCcw } from '@lucide/vue'
 import { useProject } from '@/features/projects/projects.queries'
 import { useDeployments } from './deployments.queries'
-import { type StatusTone, statusTone } from './deployments.status'
+import DeploymentRow from './DeploymentRow.vue'
 import DeployDialog from './DeployDialog.vue'
 import { useDatabases } from '@/features/databases/databases.queries'
 import StatusBadge from '@/features/databases/StatusBadge.vue'
 import { databaseTone, titleCase } from '@/features/databases/databases.status'
 import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
-import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
 import { Button } from '@/components/ui/button'
@@ -50,19 +40,6 @@ const showDeploy = ref(false)
 function onDeployed(dep: Deployment) {
   router.push(`/deployments/${dep.id}`)
 }
-
-const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
-
-const dotClass: Record<StatusTone, string> = {
-  queued: 'bg-muted-foreground/40',
-  active: 'bg-primary animate-pulse',
-  success: 'bg-success',
-  error: 'bg-destructive',
-  neutral: 'bg-muted-foreground/40',
-}
-
-const sourceOf = (d: Deployment) => d.branches?.find((b) => b.role === 'SOURCE') ?? null
-const mergeCount = (d: Deployment) => d.branches?.filter((b) => b.role === 'MERGE').length ?? 0
 </script>
 
 <template>
@@ -137,38 +114,17 @@ const mergeCount = (d: Deployment) => d.branches?.filter((b) => b.role === 'MERG
 
       <!-- list -->
       <div v-else class="mt-3 overflow-hidden rounded-xl border border-border">
-        <RouterLink
+        <DeploymentRow
           v-for="d in deployments"
           :key="d.id"
           :to="`/deployments/${d.id}`"
-          :title="titleCase(d.status)"
-          class="group flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 transition-colors last:border-b-0 hover:bg-accent/40"
-        >
-          <span class="size-2.5 shrink-0 rounded-full" :class="dotClass[statusTone[d.status]]" />
-          <span v-if="d.commitSha" class="shrink-0 font-mono text-xs text-muted-foreground/70">
-            {{ shortSha(d.commitSha) }}
-          </span>
-          <span class="min-w-0 flex-1 truncate text-sm text-foreground/90">
-            {{ d.commitMessage ?? 'No commit message' }}
-          </span>
-          <span
-            v-if="sourceOf(d)"
-            class="hidden shrink-0 items-center gap-1 font-mono text-xs text-muted-foreground/80 md:inline-flex"
-          >
-            <GitBranch class="size-3.5" />
-            {{ sourceOf(d)?.name }}
-          </span>
-          <span
-            v-if="mergeCount(d) > 0"
-            class="hidden shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:inline-flex"
-          >
-            <GitMerge class="size-3" />
-            {{ mergeCount(d) }}
-          </span>
-          <span class="shrink-0 text-xs text-muted-foreground/60">
-            {{ relativeTime(d.createdAt) }}
-          </span>
-        </RouterLink>
+          :status="d.status"
+          :commit-sha="d.commitSha"
+          :commit-message="d.commitMessage"
+          :created-at="d.createdAt"
+          :branches="d.branches"
+          time="relative"
+        />
       </div>
     </section>
 

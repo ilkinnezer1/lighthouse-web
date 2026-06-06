@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { GitBranch, GitMerge, Rocket, RotateCcw } from '@lucide/vue'
+import { computed } from 'vue'
+import { Rocket, RotateCcw } from '@lucide/vue'
 import { useDeploymentsFeed } from './deployments.queries'
-import { type StatusTone, statusTone, titleCase } from './deployments.status'
+import { titleCase } from './deployments.status'
+import DeploymentRow from './DeploymentRow.vue'
 import { useProjects } from '@/features/projects/projects.queries'
-import { clockTime, dayLabel } from '@/lib/time'
+import { useSelectFilter } from '@/lib/feed'
+import { dayLabel } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { DeploymentListItem, DeploymentStatus } from '@/types/api'
 import { Button } from '@/components/ui/button'
@@ -18,18 +19,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const router = useRouter()
-
-const statusFilter = ref<DeploymentStatus | 'all'>('all')
-const projectFilter = ref<string>('all')
-
-const status = computed(() => (statusFilter.value === 'all' ? undefined : statusFilter.value))
-const projectId = computed(() => (projectFilter.value === 'all' ? undefined : projectFilter.value))
+const [statusFilter, status] = useSelectFilter<DeploymentStatus>()
+const [projectFilter, projectId] = useSelectFilter<string>()
 
 const { data: projects } = useProjects()
 
 const feed = useDeploymentsFeed({ status, projectId })
-const items = computed(() => feed.data.value?.pages.flatMap((p) => p.items) ?? [])
+const items = feed.items
 
 const groups = computed(() => {
   const out: { label: string; items: DeploymentListItem[] }[] = []
@@ -50,22 +46,6 @@ const statusOptions: DeploymentStatus[] = [
   'QUEUED',
   'CANCELLED',
 ]
-
-const dotClass: Record<StatusTone, string> = {
-  queued: 'bg-muted-foreground/40',
-  active: 'bg-primary animate-pulse',
-  success: 'bg-success',
-  error: 'bg-destructive',
-  neutral: 'bg-muted-foreground/40',
-}
-
-const sourceOf = (d: DeploymentListItem) => d.branches.find((b) => b.role === 'SOURCE') ?? null
-const mergeCount = (d: DeploymentListItem) => d.branches.filter((b) => b.role === 'MERGE').length
-const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : null)
-
-function goToDeployment(id: string) {
-  router.push(`/deployments/${id}`)
-}
 </script>
 
 <template>
@@ -152,54 +132,19 @@ function goToDeployment(id: string) {
         </div>
 
         <div class="overflow-hidden rounded-xl border border-border">
-          <button
+          <DeploymentRow
             v-for="d in group.items"
             :key="d.id"
-            type="button"
-            :title="titleCase(d.status)"
-            class="group flex w-full items-center gap-3 border-b border-border bg-card px-4 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
-            @click="goToDeployment(d.id)"
-          >
-            <span class="size-2.5 shrink-0 rounded-full" :class="dotClass[statusTone[d.status]]" />
-
-            <span class="flex shrink-0 items-baseline gap-1">
-              <span class="truncate text-sm font-medium text-foreground">
-                {{ d.environment.project.name }}
-              </span>
-              <span class="font-mono text-xs text-muted-foreground/70">
-                /{{ d.environment.name }}
-              </span>
-            </span>
-
-            <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-              {{ d.commitMessage ?? 'No commit message' }}
-            </span>
-
-            <span
-              v-if="sourceOf(d)"
-              class="hidden shrink-0 items-center gap-1 font-mono text-xs text-muted-foreground/80 md:inline-flex"
-            >
-              <GitBranch class="size-3.5" />
-              {{ sourceOf(d)?.name }}
-            </span>
-            <span
-              v-if="mergeCount(d) > 0"
-              class="hidden shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:inline-flex"
-            >
-              <GitMerge class="size-3" />
-              {{ mergeCount(d) }}
-            </span>
-
-            <span
-              v-if="shortSha(d.commitSha)"
-              class="hidden shrink-0 font-mono text-xs text-muted-foreground/70 sm:inline"
-            >
-              {{ shortSha(d.commitSha) }}
-            </span>
-            <span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground/60">
-              {{ clockTime(d.createdAt) }}
-            </span>
-          </button>
+            :to="`/deployments/${d.id}`"
+            :status="d.status"
+            :commit-sha="d.commitSha"
+            :commit-message="d.commitMessage"
+            :created-at="d.createdAt"
+            :branches="d.branches"
+            :project="d.environment.project.name"
+            :env="d.environment.name"
+            time="clock"
+          />
         </div>
       </section>
 
