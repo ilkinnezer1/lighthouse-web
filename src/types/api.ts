@@ -120,6 +120,11 @@ export interface BranchMeta {
   lastCommitDate: string | null
 }
 
+// The branches endpoint returns name + sha, plus the BranchMeta fields when a
+// `base` is supplied (deltas relative to that source branch). Without a base,
+// the meta fields are absent — hence Partial.
+export type RepoBranchWithMeta = RepoBranch & Partial<BranchMeta>
+
 export type DeploymentBranchRole = 'SOURCE' | 'MERGE'
 
 export interface DeploymentBranch {
@@ -211,6 +216,43 @@ export interface DatabaseSnapshot {
   sizeBytes: string | null
   errorSummary: string | null
   createdAt: string
+}
+
+export interface DatabaseListItem {
+  id: string
+  type: DatabaseType
+  version: string
+  name: string
+  status: DatabaseStatus
+  ownsContainer: boolean
+  host: string | null
+  port: number | null
+  errorSummary: string | null
+  createdAt: string
+  updatedAt: string
+  environment: {
+    id: string
+    name: string
+    project: {
+      id: string
+      name: string
+      subdomain: string
+      owner: { username: string }
+    }
+  }
+}
+
+export interface DatabaseListPage {
+  items: DatabaseListItem[]
+  nextCursor: string | null
+}
+
+export interface ListDatabasesParams {
+  limit?: number
+  cursor?: string
+  status?: DatabaseStatus
+  type?: DatabaseType
+  projectId?: string
 }
 
 export interface LoginInput {

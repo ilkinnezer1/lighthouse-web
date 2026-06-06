@@ -20,3 +20,22 @@ export function relativeTime(iso: string): string {
   }
   return ''
 }
+
+export function dayLabel(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const midnight = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const days = Math.round((midnight(now) - midnight(d)) / 86400000)
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days} days ago`
+  return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+export function clockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}

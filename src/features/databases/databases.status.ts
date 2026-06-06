@@ -2,6 +2,8 @@ import type { Component } from 'vue'
 import { Ban, CircleCheck, CircleX, LoaderCircle } from '@lucide/vue'
 import type { DatabaseStatus, SnapshotStatus } from '@/types/api'
 
+export { titleCase } from '@/lib/utils'
+
 export type StatusTone = 'active' | 'success' | 'error' | 'neutral'
 
 export const databaseTone: Record<DatabaseStatus, StatusTone> = {
@@ -37,8 +39,4 @@ export const toneIcon: Record<StatusTone, Component> = {
   success: CircleCheck,
   error: CircleX,
   neutral: Ban,
-}
-
-export function titleCase(s: string): string {
-  return s.charAt(0) + s.slice(1).toLowerCase()
 }

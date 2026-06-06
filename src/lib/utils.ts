@@ -5,6 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function shortSha(sha: string | null | undefined): string | null {
+  return sha ? sha.slice(0, 7) : null
+}
+
+export function titleCase(s: string): string {
+  return s.charAt(0) + s.slice(1).toLowerCase()
+}
+
 // Render a byte count (API sends BigInt sizes as a decimal string) as a human size.
 export function formatBytes(bytes: string | number | null | undefined): string {
   if (bytes === null || bytes === undefined) return '—'

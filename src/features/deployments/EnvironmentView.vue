@@ -4,13 +4,12 @@ import { RouterLink, useRouter } from 'vue-router'
 import { ArrowLeft, ChevronRight, Database, Plus, Rocket, RotateCcw } from '@lucide/vue'
 import { useProject } from '@/features/projects/projects.queries'
 import { useDeployments } from './deployments.queries'
-import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
+import DeploymentRow from './DeploymentRow.vue'
 import DeployDialog from './DeployDialog.vue'
 import { useDatabases } from '@/features/databases/databases.queries'
 import StatusBadge from '@/features/databases/StatusBadge.vue'
 import { databaseTone, titleCase } from '@/features/databases/databases.status'
 import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
-import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
 import { Button } from '@/components/ui/button'
@@ -41,8 +40,6 @@ const showDeploy = ref(false)
 function onDeployed(dep: Deployment) {
   router.push(`/deployments/${dep.id}`)
 }
-
-const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
 </script>
 
 <template>
@@ -72,52 +69,64 @@ const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
       <span class="font-mono">{{ env?.branch ?? 'the branch' }}</span>.
     </p>
 
-    <!-- loading -->
-    <div v-if="isPending" class="mt-8 space-y-2">
-      <Skeleton v-for="n in 3" :key="n" class="h-16 w-full rounded-lg" />
-    </div>
+    <section class="mt-8">
+      <h2 class="text-sm font-semibold tracking-tight text-foreground">
+        Deployments
+        <span v-if="deployments?.length" class="ml-1 text-muted-foreground/60">
+          {{ deployments.length }}
+        </span>
+      </h2>
 
-    <!-- error -->
-    <div
-      v-else-if="isError"
-      class="mt-8 flex flex-col items-center rounded-xl border border-destructive/30 bg-destructive/5 py-12 text-center"
-    >
-      <p class="text-sm text-destructive">{{ apiErrorMessage(error) }}</p>
-      <Button variant="outline" size="sm" class="mt-4" @click="() => refetch()">
-        <RotateCcw />
-        Retry
-      </Button>
-    </div>
-
-    <!-- empty -->
-    <div
-      v-else-if="!deployments || deployments.length === 0"
-      class="mt-8 rounded-xl border border-dashed border-border py-16 text-center"
-    >
-      <h2 class="text-base font-medium text-foreground">No deployments yet</h2>
-      <p class="mt-1 text-sm text-muted-foreground">Hit Deploy to ship the latest commit.</p>
-    </div>
-
-    <!-- timeline -->
-    <div v-else class="mt-8 divide-y divide-border overflow-hidden rounded-xl border border-border">
-      <RouterLink
-        v-for="d in deployments"
-        :key="d.id"
-        :to="`/deployments/${d.id}`"
-        class="flex items-center gap-4 bg-card px-4 py-3 transition-colors hover:bg-accent/40"
-      >
-        <DeploymentStatusBadge :status="d.status" />
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm text-foreground">
-            <span class="font-mono text-muted-foreground">{{ shortSha(d.commitSha) }}</span>
-            <span class="ml-2">{{ d.commitMessage ?? 'No commit message' }}</span>
-          </p>
-          <p class="mt-0.5 truncate text-xs text-muted-foreground">
-            {{ d.commitAuthor ?? 'unknown' }} · {{ relativeTime(d.createdAt) }}
-          </p>
+      <!-- loading -->
+      <div v-if="isPending" class="mt-3 overflow-hidden rounded-xl border border-border">
+        <div
+          v-for="n in 4"
+          :key="n"
+          class="flex items-center gap-3 border-b border-border px-4 py-3 last:border-b-0"
+        >
+          <Skeleton class="size-2.5 rounded-full" />
+          <Skeleton class="h-3 w-14" />
+          <Skeleton class="h-3 flex-1" />
+          <Skeleton class="h-3 w-12" />
         </div>
-      </RouterLink>
-    </div>
+      </div>
+
+      <!-- error -->
+      <div
+        v-else-if="isError"
+        class="mt-3 flex flex-col items-center rounded-xl border border-destructive/30 bg-destructive/5 py-12 text-center"
+      >
+        <p class="text-sm text-destructive">{{ apiErrorMessage(error) }}</p>
+        <Button variant="outline" size="sm" class="mt-4" @click="() => refetch()">
+          <RotateCcw />
+          Retry
+        </Button>
+      </div>
+
+      <!-- empty -->
+      <div
+        v-else-if="!deployments || deployments.length === 0"
+        class="mt-3 rounded-xl border border-dashed border-border py-16 text-center"
+      >
+        <h3 class="text-base font-medium text-foreground">No deployments yet</h3>
+        <p class="mt-1 text-sm text-muted-foreground">Hit Deploy to ship the latest commit.</p>
+      </div>
+
+      <!-- list -->
+      <div v-else class="mt-3 overflow-hidden rounded-xl border border-border">
+        <DeploymentRow
+          v-for="d in deployments"
+          :key="d.id"
+          :to="`/deployments/${d.id}`"
+          :status="d.status"
+          :commit-sha="d.commitSha"
+          :commit-message="d.commitMessage"
+          :created-at="d.createdAt"
+          :branches="d.branches"
+          time="relative"
+        />
+      </div>
+    </section>
 
     <!-- databases -->
     <section class="mt-10">

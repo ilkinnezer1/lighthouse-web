@@ -1,8 +1,18 @@
 import { api } from '@/lib/api'
-import type { CreateDatabaseInput, ManagedDatabase } from '@/types/api'
+import type {
+  CreateDatabaseInput,
+  DatabaseListPage,
+  ListDatabasesParams,
+  ManagedDatabase,
+} from '@/types/api'
 
 export async function listDatabases(envId: string) {
   const { data } = await api.get<ManagedDatabase[]>(`/environments/${envId}/databases`)
+  return data
+}
+
+export async function listAllDatabases(params?: ListDatabasesParams) {
+  const { data } = await api.get<DatabaseListPage>('/databases', { params })
   return data
 }
 

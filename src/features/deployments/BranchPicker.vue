@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { Check, Search } from '@lucide/vue'
 import type { BranchMeta, RepoBranch } from '@/types/api'
 import { relativeTime } from '@/lib/time'
+import { shortSha } from '@/lib/utils'
 
 const props = defineProps<{
   branches: RepoBranch[]
@@ -31,7 +32,6 @@ function toggle(name: string) {
 }
 
 const isSelected = (name: string) => selected.value.includes(name)
-const shortSha = (sha: string) => sha.slice(0, 7)
 const metaFor = (name: string) => props.meta?.[name] ?? null
 </script>
 
@@ -87,7 +87,7 @@ const metaFor = (name: string) => props.meta?.[name] ?? null
             {{ metaFor(b.name)?.aheadBy }} ahead
           </span>
           <span
-            v-else
+            v-else-if="metaFor(b.name)?.aheadBy === 0"
             class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
           >
             actual

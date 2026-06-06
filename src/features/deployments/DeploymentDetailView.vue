@@ -8,9 +8,12 @@ import { deploymentKeys, useCancelDeployment, useDeployment } from './deployment
 import { useDeploymentLogs } from './useDeploymentLogs'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
-import { type StatusTone, isTerminalStatus, stageTone, titleCase } from './deployments.status'
+import { isTerminalStatus, stageTone, statusDotClass, titleCase } from './deployments.status'
+import { useProjectBranches } from '@/features/projects/projects.queries'
+import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
+import { shortSha } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -41,13 +44,14 @@ const mergeBranches = computed(
 )
 const hasBranchSet = computed(() => !!sourceBranch.value || mergeBranches.value.length > 0)
 
-const dotClass: Record<StatusTone, string> = {
-  queued: 'bg-muted-foreground/40',
-  active: 'bg-primary animate-pulse',
-  success: 'bg-success',
-  error: 'bg-destructive',
-  neutral: 'bg-muted-foreground/40',
-}
+const projectId = computed(() => deployment.value?.environment?.projectId ?? '')
+const sourceName = computed(() => sourceBranch.value?.name)
+const branchMetaQuery = useProjectBranches(projectId, {
+  base: () => sourceName.value,
+  enabled: () => hasBranchSet.value && !!projectId.value && !!sourceName.value,
+})
+const branchMeta = computed(() => toBranchMetaMap(branchMetaQuery.data.value))
+const metaFor = (name: string) => branchMeta.value[name] ?? null
 
 const logEl = ref<HTMLElement | null>(null)
 watch(
@@ -57,8 +61,6 @@ watch(
     if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight
   },
 )
-
-const shortSha = (sha: string | null) => (sha ? sha.slice(0, 7) : '—')
 
 async function onCancel() {
   try {
@@ -106,7 +108,7 @@ async function onCancel() {
           <div class="flex items-center gap-3">
             <DeploymentStatusBadge :status="deployment.status" />
             <span class="font-mono text-sm text-muted-foreground">
-              {{ shortSha(deployment.commitSha) }}
+              {{ shortSha(deployment.commitSha) ?? '—' }}
             </span>
           </div>
           <p class="mt-2 truncate text-foreground">
@@ -156,8 +158,14 @@ async function onCancel() {
             <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
               {{ sourceBranch.name }}
             </span>
+            <span
+              v-if="metaFor(sourceBranch.name)?.lastCommitDate"
+              class="hidden text-xs text-muted-foreground sm:inline"
+            >
+              {{ relativeTime(metaFor(sourceBranch.name)!.lastCommitDate!) }}
+            </span>
             <span class="font-mono text-xs text-muted-foreground">
-              {{ shortSha(sourceBranch.sha) }}
+              {{ shortSha(sourceBranch.sha) ?? '—' }}
             </span>
             <span class="text-xs text-primary">source</span>
           </div>
@@ -170,7 +178,25 @@ async function onCancel() {
             <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
               {{ b.name }}
             </span>
-            <span class="font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) }}</span>
+            <span
+              v-if="(metaFor(b.name)?.aheadBy ?? 0) > 0"
+              class="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            >
+              {{ metaFor(b.name)?.aheadBy }} ahead
+            </span>
+            <span
+              v-else-if="metaFor(b.name)?.aheadBy === 0"
+              class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+            >
+              actual
+            </span>
+            <span
+              v-if="metaFor(b.name)?.lastCommitDate"
+              class="hidden text-xs text-muted-foreground sm:inline"
+            >
+              {{ relativeTime(metaFor(b.name)!.lastCommitDate!) }}
+            </span>
+            <span class="font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) ?? '—' }}</span>
             <span class="text-xs text-muted-foreground">merged</span>
           </div>
         </div>
@@ -185,7 +211,7 @@ async function onCancel() {
             :key="stage.id"
             class="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
           >
-            <span class="size-2 rounded-full" :class="dotClass[stageTone[stage.status]]" />
+            <span class="size-2 rounded-full" :class="statusDotClass[stageTone[stage.status]]" />
             <span class="flex-1 font-mono text-sm text-foreground">{{ stage.name }}</span>
             <span class="text-xs text-muted-foreground">{{ titleCase(stage.status) }}</span>
           </li>
