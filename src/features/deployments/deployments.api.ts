@@ -1,8 +1,18 @@
 import { api } from '@/lib/api'
-import type { Deployment } from '@/types/api'
+import type {
+  CreateDeploymentInput,
+  Deployment,
+  DeploymentListPage,
+  ListDeploymentsParams,
+} from '@/types/api'
 
 export async function listDeployments(envId: string) {
   const { data } = await api.get<Deployment[]>(`/environments/${envId}/deployments`)
+  return data
+}
+
+export async function listAllDeployments(params?: ListDeploymentsParams) {
+  const { data } = await api.get<DeploymentListPage>('/deployments', { params })
   return data
 }
 
@@ -11,8 +21,8 @@ export async function getDeployment(id: string) {
   return data
 }
 
-export async function createDeployment(envId: string) {
-  const { data } = await api.post<Deployment>(`/environments/${envId}/deployments`)
+export async function createDeployment(envId: string, input?: CreateDeploymentInput) {
+  const { data } = await api.post<Deployment>(`/environments/${envId}/deployments`, input)
   return data
 }
 
