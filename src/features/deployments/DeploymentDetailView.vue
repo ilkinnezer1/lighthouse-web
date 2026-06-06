@@ -9,7 +9,9 @@ import { useDeploymentLogs } from './useDeploymentLogs'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
 import { type StatusTone, isTerminalStatus, stageTone, titleCase } from './deployments.status'
+import { useProjectBranches } from '@/features/projects/projects.queries'
 import { relativeTime } from '@/lib/time'
+import type { BranchMeta } from '@/types/api'
 import { apiErrorMessage } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -40,6 +42,25 @@ const mergeBranches = computed(
   () => deployment.value?.branches?.filter((b) => b.role === 'MERGE') ?? [],
 )
 const hasBranchSet = computed(() => !!sourceBranch.value || mergeBranches.value.length > 0)
+
+const projectId = computed(() => deployment.value?.environment?.projectId ?? '')
+const sourceName = computed(() => sourceBranch.value?.name)
+const branchMetaQuery = useProjectBranches(projectId, {
+  base: () => sourceName.value,
+  enabled: () => hasBranchSet.value && !!projectId.value && !!sourceName.value,
+})
+const branchMeta = computed<Record<string, BranchMeta>>(() => {
+  const out: Record<string, BranchMeta> = {}
+  for (const b of branchMetaQuery.data.value ?? []) {
+    out[b.name] = {
+      aheadBy: b.aheadBy ?? null,
+      behindBy: b.behindBy ?? null,
+      lastCommitDate: b.lastCommitDate ?? null,
+    }
+  }
+  return out
+})
+const metaFor = (name: string) => branchMeta.value[name] ?? null
 
 const dotClass: Record<StatusTone, string> = {
   queued: 'bg-muted-foreground/40',
@@ -156,6 +177,12 @@ async function onCancel() {
             <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
               {{ sourceBranch.name }}
             </span>
+            <span
+              v-if="metaFor(sourceBranch.name)?.lastCommitDate"
+              class="hidden text-xs text-muted-foreground sm:inline"
+            >
+              {{ relativeTime(metaFor(sourceBranch.name)!.lastCommitDate!) }}
+            </span>
             <span class="font-mono text-xs text-muted-foreground">
               {{ shortSha(sourceBranch.sha) }}
             </span>
@@ -169,6 +196,24 @@ async function onCancel() {
             <GitMerge class="size-4 shrink-0 text-muted-foreground" />
             <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
               {{ b.name }}
+            </span>
+            <span
+              v-if="(metaFor(b.name)?.aheadBy ?? 0) > 0"
+              class="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            >
+              {{ metaFor(b.name)?.aheadBy }} ahead
+            </span>
+            <span
+              v-else-if="metaFor(b.name)?.aheadBy === 0"
+              class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+            >
+              actual
+            </span>
+            <span
+              v-if="metaFor(b.name)?.lastCommitDate"
+              class="hidden text-xs text-muted-foreground sm:inline"
+            >
+              {{ relativeTime(metaFor(b.name)!.lastCommitDate!) }}
             </span>
             <span class="font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) }}</span>
             <span class="text-xs text-muted-foreground">merged</span>

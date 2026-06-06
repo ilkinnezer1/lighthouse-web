@@ -1,6 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
-import type { CreateDeploymentInput } from '@/types/api'
+import type { CreateDeploymentInput, DeploymentStatus } from '@/types/api'
 import {
   cancelDeployment,
   createDeployment,
@@ -21,6 +26,29 @@ export function useAllDeployments() {
     queryKey: deploymentKeys.all,
     queryFn: () => listAllDeployments(),
     select: (page) => page.items,
+  })
+}
+
+export function useDeploymentsFeed(filters: {
+  status?: MaybeRefOrGetter<DeploymentStatus | undefined>
+  projectId?: MaybeRefOrGetter<string | undefined>
+}) {
+  return useInfiniteQuery({
+    queryKey: computed(() => [
+      ...deploymentKeys.all,
+      'feed',
+      toValue(filters.status) ?? null,
+      toValue(filters.projectId) ?? null,
+    ]),
+    queryFn: ({ pageParam }) =>
+      listAllDeployments({
+        cursor: (pageParam as string) || undefined,
+        status: toValue(filters.status),
+        projectId: toValue(filters.projectId),
+        limit: 30,
+      }),
+    initialPageParam: '',
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
 }
 
