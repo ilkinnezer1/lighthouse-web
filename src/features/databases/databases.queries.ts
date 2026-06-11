@@ -43,6 +43,8 @@ export function useDatabasesFeed(filters: {
         projectId: toValue(filters.projectId),
         limit: 30,
       }),
+    refetchInterval: (items) =>
+      items.some((d) => isDatabasePending(d.status)) ? 4000 : false,
   })
 }
 

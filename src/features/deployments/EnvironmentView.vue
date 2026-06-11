@@ -10,6 +10,7 @@ import { useDatabases } from '@/features/databases/databases.queries'
 import StatusBadge from '@/features/databases/StatusBadge.vue'
 import { databaseTone, titleCase } from '@/features/databases/databases.status'
 import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
+import EnvVarsSection from '@/features/env-vars/EnvVarsSection.vue'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
 import { Button } from '@/components/ui/button'
@@ -127,6 +128,8 @@ function onDeployed(dep: Deployment) {
         />
       </div>
     </section>
+
+    <EnvVarsSection :env-id="envId" class="mt-10 block" />
 
     <!-- databases -->
     <section class="mt-10">

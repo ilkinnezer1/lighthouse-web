@@ -11,12 +11,17 @@ import {
 export function useCursorFeed<T>(opts: {
   queryKey: MaybeRefOrGetter<readonly unknown[]>
   fetchPage: (cursor: string | undefined) => Promise<{ items: T[]; nextCursor: string | null }>
+  refetchInterval?: (items: T[]) => number | false
 }) {
   const query = useInfiniteQuery({
     queryKey: computed(() => toValue(opts.queryKey)),
     queryFn: ({ pageParam }) => opts.fetchPage((pageParam as string) || undefined),
     initialPageParam: '',
     getNextPageParam: (last) => last.nextCursor ?? undefined,
+    refetchInterval: opts.refetchInterval
+      ? (q) =>
+          opts.refetchInterval!(q.state.data?.pages.flatMap((p) => p.items) ?? [])
+      : undefined,
   })
   const items = computed(() => query.data.value?.pages.flatMap((p) => p.items) ?? [])
   return Object.assign(query, { items })

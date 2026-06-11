@@ -43,6 +43,8 @@ export function useDeploymentsFeed(filters: {
         projectId: toValue(filters.projectId),
         limit: 30,
       }),
+    refetchInterval: (items) =>
+      items.some((d) => !isTerminalStatus(d.status)) ? 4000 : false,
   })
 }
 
@@ -50,6 +52,8 @@ export function useDeployments(envId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => deploymentKeys.byEnv(toValue(envId))),
     queryFn: () => listDeployments(toValue(envId)),
+    refetchInterval: (query) =>
+      query.state.data?.some((d) => !isTerminalStatus(d.status)) ? 4000 : false,
   })
 }
 
