@@ -8,6 +8,8 @@ import {
   getDeployment,
   listAllDeployments,
   listDeployments,
+  redeployDeployment,
+  rollbackDeployment,
 } from './deployments.api'
 import { isTerminalStatus } from './deployments.status'
 
@@ -80,4 +82,27 @@ export function useCreateDeployment(envId: MaybeRefOrGetter<string>) {
 
 export function useCancelDeployment() {
   return useMutation({ mutationFn: (id: string) => cancelDeployment(id) })
+}
+
+// Redeploy + rollback both enqueue a fresh deployment, so refresh the env list
+// and global feed once the new row exists.
+function invalidateFeeds(qc: ReturnType<typeof useQueryClient>, envId: string) {
+  qc.invalidateQueries({ queryKey: deploymentKeys.byEnv(envId) })
+  qc.invalidateQueries({ queryKey: deploymentKeys.all })
+}
+
+export function useRedeployDeployment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => redeployDeployment(id),
+    onSuccess: (created) => invalidateFeeds(qc, created.environmentId),
+  })
+}
+
+export function useRollbackDeployment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => rollbackDeployment(id),
+    onSuccess: (created) => invalidateFeeds(qc, created.environmentId),
+  })
 }

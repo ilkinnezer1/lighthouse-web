@@ -29,3 +29,13 @@ export async function createDeployment(envId: string, input?: CreateDeploymentIn
 export async function cancelDeployment(id: string) {
   await api.post(`/deployments/${id}/cancel`)
 }
+
+export async function redeployDeployment(id: string) {
+  const { data } = await api.post<Deployment>(`/deployments/${id}/redeploy`)
+  return data
+}
+
+export async function rollbackDeployment(id: string) {
+  const { data } = await api.post<Deployment>(`/deployments/${id}/rollback`)
+  return data
+}

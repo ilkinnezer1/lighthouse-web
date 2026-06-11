@@ -1,11 +1,28 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
-import { ArrowLeft, Ban, ExternalLink, GitBranch, GitMerge, RotateCcw } from '@lucide/vue'
+import {
+  ArrowLeft,
+  Ban,
+  ExternalLink,
+  GitBranch,
+  GitMerge,
+  LoaderCircle,
+  RefreshCw,
+  RotateCcw,
+  Undo2,
+} from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import { deploymentKeys, useCancelDeployment, useDeployment } from './deployments.queries'
+import {
+  deploymentKeys,
+  useCancelDeployment,
+  useDeployment,
+  useRedeployDeployment,
+  useRollbackDeployment,
+} from './deployments.queries'
 import { useDeploymentLogs } from './useDeploymentLogs'
+import { useRuntimeLogs } from './useRuntimeLogs'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
 import { isTerminalStatus, stageTone, statusDotClass, titleCase } from './deployments.status'
@@ -16,21 +33,61 @@ import { apiErrorMessage } from '@/lib/api'
 import { shortSha } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 const props = defineProps<{ id: string }>()
 const qc = useQueryClient()
+const router = useRouter()
 
 const { data: deployment, isPending, isError, error, refetch } = useDeployment(() => props.id)
 const cancel = useCancelDeployment()
+const redeploy = useRedeployDeployment()
+const rollback = useRollbackDeployment()
 
 const { logs, connected } = useDeploymentLogs(
   () => props.id,
   () => qc.invalidateQueries({ queryKey: deploymentKeys.detail(props.id) }),
 )
 
+// Build vs runtime log tabs. Runtime logs require a live container, so they're
+// only offered while the deployment is RUNNING/SUCCEEDED, and we only stream
+// (telling the worker to tail) while the runtime tab is open.
+const activeTab = ref<'build' | 'runtime'>('build')
+const runtimeAvailable = computed(
+  () => deployment.value?.status === 'RUNNING' || deployment.value?.status === 'SUCCEEDED',
+)
+const runtimeEnabled = computed(() => activeTab.value === 'runtime' && runtimeAvailable.value)
+
+const { lines: runtimeLines, streaming: runtimeStreaming } = useRuntimeLogs(() => props.id, {
+  enabled: () => runtimeEnabled.value,
+})
+
+const activeLines = computed<Array<{ key: string; line: string; stage: string | null }>>(() =>
+  activeTab.value === 'build'
+    ? logs.value.map((e) => ({ key: e.id, line: e.line, stage: e.stage }))
+    : runtimeLines.value.map((line, i) => ({ key: `r${i}`, line, stage: null })),
+)
+const activeConnected = computed(() =>
+  activeTab.value === 'build' ? connected.value : runtimeStreaming.value,
+)
+
 const isActive = computed(
   () => !!deployment.value && !isTerminalStatus(deployment.value.status),
 )
+// Redeploy any finished build (re-resolves branches to their current tips);
+// rollback rebuilds a SUCCEEDED deployment at its exact pinned SHAs.
+const canRedeploy = computed(() => !!deployment.value && !isActive.value)
+const canRollback = computed(() => deployment.value?.status === 'SUCCEEDED')
 const liveUrl = computed(() => {
   const d = deployment.value
   return d && (d.status === 'RUNNING' || d.status === 'SUCCEEDED') ? d.url : null
@@ -55,7 +112,7 @@ const metaFor = (name: string) => branchMeta.value[name] ?? null
 
 const logEl = ref<HTMLElement | null>(null)
 watch(
-  () => logs.value.length,
+  [() => activeLines.value.length, activeTab],
   async () => {
     await nextTick()
     if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight
@@ -69,6 +126,26 @@ async function onCancel() {
     refetch()
   } catch (e) {
     toast.error(apiErrorMessage(e, 'Could not cancel'))
+  }
+}
+
+async function onRedeploy() {
+  try {
+    const created = await redeploy.mutateAsync(props.id)
+    toast.success('Redeploy started')
+    router.push({ name: 'deployment', params: { id: created.id } })
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Could not redeploy'))
+  }
+}
+
+async function onRollback() {
+  try {
+    const created = await rollback.mutateAsync(props.id)
+    toast.success('Rollback started')
+    router.push({ name: 'deployment', params: { id: created.id } })
+  } catch (e) {
+    toast.error(apiErrorMessage(e, 'Could not roll back'))
   }
 }
 </script>
@@ -136,6 +213,43 @@ async function onCancel() {
             <Ban />
             Cancel
           </Button>
+          <Button
+            v-if="canRedeploy"
+            variant="outline"
+            size="sm"
+            :disabled="redeploy.isPending.value"
+            @click="onRedeploy"
+          >
+            <RefreshCw :class="redeploy.isPending.value && 'animate-spin'" />
+            Redeploy
+          </Button>
+          <AlertDialog v-if="canRollback">
+            <AlertDialogTrigger as-child>
+              <Button variant="outline" size="sm" :disabled="rollback.isPending.value">
+                <Undo2 />
+                Rollback
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Roll back to this deployment?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This rebuilds this deployment's exact commit{{
+                    mergeBranches.length ? 's' : ''
+                  }}
+                  ({{ shortSha(sourceBranch?.sha ?? deployment.commitSha) ?? 'pinned SHA' }}) and
+                  makes it live, superseding the current deployment.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction :disabled="rollback.isPending.value" @click="onRollback">
+                  <LoaderCircle v-if="rollback.isPending.value" class="animate-spin" />
+                  Roll back
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </header>
 
@@ -240,14 +354,41 @@ async function onCancel() {
 
       <!-- logs -->
       <section class="mt-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-semibold tracking-tight text-foreground">Build logs</h2>
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-4">
+            <button
+              type="button"
+              class="text-sm font-semibold tracking-tight transition-colors"
+              :class="
+                activeTab === 'build'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              "
+              @click="activeTab = 'build'"
+            >
+              Build logs
+            </button>
+            <button
+              type="button"
+              :disabled="!runtimeAvailable"
+              class="text-sm font-semibold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+              :class="
+                activeTab === 'runtime'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              "
+              :title="runtimeAvailable ? undefined : 'Available while the deployment is running'"
+              @click="activeTab = 'runtime'"
+            >
+              Runtime logs
+            </button>
+          </div>
           <span class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <span
               class="size-1.5 rounded-full"
-              :class="connected ? 'bg-success' : 'bg-muted-foreground/40'"
+              :class="activeConnected ? 'bg-success' : 'bg-muted-foreground/40'"
             />
-            {{ connected ? 'live' : 'offline' }}
+            {{ activeConnected ? 'live' : 'offline' }}
           </span>
         </div>
         <div
@@ -255,12 +396,21 @@ async function onCancel() {
           class="mt-3 h-96 overflow-auto rounded-xl border border-border p-4 font-mono text-xs leading-relaxed"
           style="background: #0a0d14"
         >
-          <p v-if="logs.length === 0" class="text-muted-foreground">
-            {{ isActive ? 'Waiting for logs…' : 'No logs for this deployment.' }}
+          <p v-if="activeLines.length === 0" class="text-muted-foreground">
+            <template v-if="activeTab === 'runtime'">
+              {{
+                runtimeAvailable
+                  ? 'Waiting for output…'
+                  : 'Runtime logs are available while the deployment is running.'
+              }}
+            </template>
+            <template v-else>
+              {{ isActive ? 'Waiting for logs…' : 'No logs for this deployment.' }}
+            </template>
           </p>
           <div
-            v-for="entry in logs"
-            :key="entry.id"
+            v-for="entry in activeLines"
+            :key="entry.key"
             class="whitespace-pre-wrap wrap-break-word text-foreground/90"
           >
             <span v-if="entry.stage" class="mr-2 text-muted-foreground/60">[{{ entry.stage }}]</span><AnsiLine :text="entry.line" />
