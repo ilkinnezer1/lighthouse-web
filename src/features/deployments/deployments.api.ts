@@ -39,3 +39,22 @@ export async function rollbackDeployment(id: string) {
   const { data } = await api.post<Deployment>(`/deployments/${id}/rollback`)
   return data
 }
+
+export type ServiceAction = 'start' | 'stop' | 'restart'
+
+export interface ServiceActionResult {
+  service: string
+  action: ServiceAction
+  state: string
+}
+
+export async function actOnService(
+  deploymentId: string,
+  name: string,
+  action: ServiceAction,
+) {
+  const { data } = await api.post<ServiceActionResult>(
+    `/deployments/${deploymentId}/services/${encodeURIComponent(name)}/${action}`,
+  )
+  return data
+}

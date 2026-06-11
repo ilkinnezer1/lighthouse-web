@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { useCursorFeed } from '@/lib/feed'
-import type { CreateDeploymentInput, DeploymentStatus } from '@/types/api'
+import type { CreateDeploymentInput, Deployment, DeploymentStatus } from '@/types/api'
 import {
+  actOnService,
   cancelDeployment,
   createDeployment,
   getDeployment,
@@ -10,6 +11,7 @@ import {
   listDeployments,
   redeployDeployment,
   rollbackDeployment,
+  type ServiceAction,
 } from './deployments.api'
 import { isTerminalStatus } from './deployments.status'
 
@@ -84,8 +86,6 @@ export function useCancelDeployment() {
   return useMutation({ mutationFn: (id: string) => cancelDeployment(id) })
 }
 
-// Redeploy + rollback both enqueue a fresh deployment, so refresh the env list
-// and global feed once the new row exists.
 function invalidateFeeds(qc: ReturnType<typeof useQueryClient>, envId: string) {
   qc.invalidateQueries({ queryKey: deploymentKeys.byEnv(envId) })
   qc.invalidateQueries({ queryKey: deploymentKeys.all })
@@ -104,5 +104,25 @@ export function useRollbackDeployment() {
   return useMutation({
     mutationFn: (id: string) => rollbackDeployment(id),
     onSuccess: (created) => invalidateFeeds(qc, created.environmentId),
+  })
+}
+
+export function useServiceAction(deploymentId: MaybeRefOrGetter<string>) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, action }: { name: string; action: ServiceAction }) =>
+      actOnService(toValue(deploymentId), name, action),
+    onSuccess: (result) => {
+      qc.setQueryData<Deployment>(deploymentKeys.detail(toValue(deploymentId)), (prev) =>
+        prev
+          ? {
+              ...prev,
+              services: prev.services?.map((s) =>
+                s.name === result.service ? { ...s, status: result.state } : s,
+              ),
+            }
+          : prev,
+      )
+    },
   })
 }

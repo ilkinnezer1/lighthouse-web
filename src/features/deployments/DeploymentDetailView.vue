@@ -9,8 +9,12 @@ import {
   GitBranch,
   GitMerge,
   LoaderCircle,
+  Play,
   RefreshCw,
   RotateCcw,
+  RotateCw,
+  Square,
+  SquareTerminal,
   Undo2,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -20,12 +24,20 @@ import {
   useDeployment,
   useRedeployDeployment,
   useRollbackDeployment,
+  useServiceAction,
 } from './deployments.queries'
+import type { ServiceAction } from './deployments.api'
 import { useDeploymentLogs } from './useDeploymentLogs'
 import { useRuntimeLogs } from './useRuntimeLogs'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
-import { isTerminalStatus, stageTone, statusDotClass, titleCase } from './deployments.status'
+import {
+  isTerminalStatus,
+  stageTone,
+  statusDotClass,
+  statusTextClass,
+  titleCase,
+} from './deployments.status'
 import { useProjectBranches } from '@/features/projects/projects.queries'
 import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { relativeTime } from '@/lib/time'
@@ -53,23 +65,36 @@ const { data: deployment, isPending, isError, error, refetch } = useDeployment((
 const cancel = useCancelDeployment()
 const redeploy = useRedeployDeployment()
 const rollback = useRollbackDeployment()
+const svcAction = useServiceAction(() => props.id)
+const busyService = ref<string | null>(null)
 
 const { logs, connected } = useDeploymentLogs(
   () => props.id,
   () => qc.invalidateQueries({ queryKey: deploymentKeys.detail(props.id) }),
 )
 
-// Build vs runtime log tabs. Runtime logs require a live container, so they're
-// only offered while the deployment is RUNNING/SUCCEEDED, and we only stream
-// (telling the worker to tail) while the runtime tab is open.
 const activeTab = ref<'build' | 'runtime'>('build')
 const runtimeAvailable = computed(
   () => deployment.value?.status === 'RUNNING' || deployment.value?.status === 'SUCCEEDED',
 )
 const runtimeEnabled = computed(() => activeTab.value === 'runtime' && runtimeAvailable.value)
 
+const services = computed(() => deployment.value?.services ?? [])
+const selectedService = ref<string | undefined>(undefined)
+watch(
+  services,
+  (svcs) => {
+    if (!svcs.length) return
+    if (!selectedService.value || !svcs.some((s) => s.name === selectedService.value)) {
+      selectedService.value = (svcs.find((s) => s.isWeb) ?? svcs[0]).name
+    }
+  },
+  { immediate: true },
+)
+
 const { lines: runtimeLines, streaming: runtimeStreaming } = useRuntimeLogs(() => props.id, {
   enabled: () => runtimeEnabled.value,
+  service: () => selectedService.value,
 })
 
 const activeLines = computed<Array<{ key: string; line: string; stage: string | null }>>(() =>
@@ -84,8 +109,6 @@ const activeConnected = computed(() =>
 const isActive = computed(
   () => !!deployment.value && !isTerminalStatus(deployment.value.status),
 )
-// Redeploy any finished build (re-resolves branches to their current tips);
-// rollback rebuilds a SUCCEEDED deployment at its exact pinned SHAs.
 const canRedeploy = computed(() => !!deployment.value && !isActive.value)
 const canRollback = computed(() => deployment.value?.status === 'SUCCEEDED')
 const liveUrl = computed(() => {
@@ -147,6 +170,28 @@ async function onRollback() {
   } catch (e) {
     toast.error(apiErrorMessage(e, 'Could not roll back'))
   }
+}
+
+const actionVerb: Record<ServiceAction, string> = {
+  start: 'started',
+  stop: 'stopped',
+  restart: 'restarted',
+}
+
+async function onServiceAction(name: string, action: ServiceAction) {
+  busyService.value = name
+  try {
+    await svcAction.mutateAsync({ name, action })
+    toast.success(`${name} ${actionVerb[action]}`)
+  } catch (e) {
+    toast.error(apiErrorMessage(e, `Could not ${action} ${name}`))
+  } finally {
+    busyService.value = null
+  }
+}
+
+function onCli(name: string) {
+  toast.info(`Terminal for ${name} coming soon`)
 }
 </script>
 
@@ -327,7 +372,9 @@ async function onRollback() {
           >
             <span class="size-2 rounded-full" :class="statusDotClass[stageTone[stage.status]]" />
             <span class="flex-1 font-mono text-sm text-foreground">{{ stage.name }}</span>
-            <span class="text-xs text-muted-foreground">{{ titleCase(stage.status) }}</span>
+            <span class="text-xs font-medium" :class="statusTextClass[stageTone[stage.status]]">
+              {{ titleCase(stage.status) }}
+            </span>
           </li>
         </ol>
       </section>
@@ -341,13 +388,62 @@ async function onRollback() {
             :key="svc.id"
             class="flex items-center justify-between gap-3 bg-card px-4 py-2.5"
           >
-            <span class="font-mono text-sm text-foreground">
-              {{ svc.name }}
-              <span v-if="svc.isWeb" class="ml-2 text-xs text-primary">web</span>
-            </span>
-            <span class="text-xs text-muted-foreground">
-              {{ svc.status ?? '—' }}<span v-if="svc.port"> · :{{ svc.port }}</span>
-            </span>
+            <div class="flex min-w-0 items-center gap-2">
+              <span
+                class="size-1.5 shrink-0 rounded-full"
+                :class="svc.status === 'running' ? 'bg-success' : 'bg-muted-foreground/40'"
+              />
+              <span class="truncate font-mono text-sm text-foreground">
+                {{ svc.name }}
+                <span v-if="svc.isWeb" class="ml-1 text-xs text-primary">web</span>
+              </span>
+              <span class="shrink-0 text-xs text-muted-foreground">
+                {{ svc.status ?? '—' }}<span v-if="svc.port"> · :{{ svc.port }}</span>
+              </span>
+            </div>
+            <div class="flex shrink-0 items-center gap-0.5">
+              <Button
+                v-if="svc.status === 'running'"
+                variant="ghost"
+                size="icon-sm"
+                title="Stop"
+                class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                :disabled="busyService === svc.name"
+                @click="onServiceAction(svc.name, 'stop')"
+              >
+                <Square />
+              </Button>
+              <Button
+                v-else
+                variant="ghost"
+                size="icon-sm"
+                title="Start"
+                class="text-success hover:bg-success/10 hover:text-success"
+                :disabled="busyService === svc.name"
+                @click="onServiceAction(svc.name, 'start')"
+              >
+                <Play />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Restart"
+                class="text-primary hover:bg-primary/10 hover:text-primary"
+                :disabled="busyService === svc.name"
+                @click="onServiceAction(svc.name, 'restart')"
+              >
+                <RotateCw :class="busyService === svc.name && 'animate-spin'" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Open terminal"
+                class="text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                @click="onCli(svc.name)"
+              >
+                <SquareTerminal />
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -390,6 +486,30 @@ async function onRollback() {
             />
             {{ activeConnected ? 'live' : 'offline' }}
           </span>
+        </div>
+        <div
+          v-if="activeTab === 'runtime' && services.length > 1"
+          class="mt-3 flex gap-1 overflow-x-auto"
+        >
+          <button
+            v-for="svc in services"
+            :key="svc.id"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-xs transition-colors"
+            :class="
+              selectedService === svc.name
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            "
+            @click="selectedService = svc.name"
+          >
+            <span
+              class="size-1.5 rounded-full"
+              :class="svc.status === 'running' ? 'bg-success' : 'bg-muted-foreground/40'"
+            />
+            {{ svc.name }}
+            <span v-if="svc.isWeb" class="text-[10px] opacity-70">web</span>
+          </button>
         </div>
         <div
           ref="logEl"

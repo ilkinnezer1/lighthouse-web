@@ -38,3 +38,11 @@ export const statusDotClass: Record<StatusTone, string> = {
   error: 'bg-destructive',
   neutral: 'bg-muted-foreground/40',
 }
+
+export const statusTextClass: Record<StatusTone, string> = {
+  queued: 'text-muted-foreground',
+  active: 'text-primary',
+  success: 'text-success',
+  error: 'text-destructive',
+  neutral: 'text-muted-foreground',
+}

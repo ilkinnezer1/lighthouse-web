@@ -7,11 +7,13 @@ import { type MaybeRefOrGetter, onScopeDispose, ref, toValue, watch } from 'vue'
 //
 // Gated by `enabled`: we only open the stream (which makes the worker run
 // `docker logs --follow`) while the caller is actually looking, and abort it —
-// stopping the worker tail — the moment they aren't.
+// stopping the worker tail — the moment they aren't. `service` optionally
+// selects a container by name for multi-service deployments (defaults to web).
 export function useRuntimeLogs(
   deploymentId: MaybeRefOrGetter<string>,
   opts: {
     enabled: MaybeRefOrGetter<boolean>
+    service?: MaybeRefOrGetter<string | undefined>
     tail?: number
   },
 ) {
@@ -21,16 +23,18 @@ export function useRuntimeLogs(
 
   let controller: AbortController | null = null
 
-  async function start(id: string): Promise<void> {
+  async function start(id: string, service: string | undefined): Promise<void> {
     stop()
     lines.value = []
     error.value = null
     const ac = new AbortController()
     controller = ac
 
-    const tail = opts.tail ?? 200
+    const params = new URLSearchParams({ tail: String(opts.tail ?? 200) })
+    if (service) params.set('service', service)
+
     try {
-      const res = await fetch(`/api/deployments/${id}/runtime-logs?tail=${tail}`, {
+      const res = await fetch(`/api/deployments/${id}/runtime-logs?${params.toString()}`, {
         credentials: 'include',
         signal: ac.signal,
         headers: { Accept: 'text/plain' },
@@ -78,14 +82,15 @@ export function useRuntimeLogs(
 
   function restart(): void {
     const id = toValue(deploymentId)
-    if (id && toValue(opts.enabled)) void start(id)
+    if (id && toValue(opts.enabled)) void start(id, toValue(opts.service))
   }
 
   watch(
-    () => [toValue(deploymentId), toValue(opts.enabled)] as const,
-    ([id, enabled]) => {
+    () =>
+      [toValue(deploymentId), toValue(opts.enabled), toValue(opts.service)] as const,
+    ([id, enabled, service]) => {
       stop()
-      if (id && enabled) void start(id)
+      if (id && enabled) void start(id, service)
     },
     { immediate: true },
   )
