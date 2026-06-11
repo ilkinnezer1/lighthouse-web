@@ -8,6 +8,7 @@ import {
   ExternalLink,
   GitBranch,
   GitMerge,
+  Globe,
   LoaderCircle,
   Play,
   RefreshCw,
@@ -15,6 +16,7 @@ import {
   RotateCw,
   Square,
   SquareTerminal,
+  TriangleAlert,
   Undo2,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -43,6 +45,7 @@ import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import { shortSha } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -115,6 +118,8 @@ const liveUrl = computed(() => {
   const d = deployment.value
   return d && (d.status === 'RUNNING' || d.status === 'SUCCEEDED') ? d.url : null
 })
+const webService = computed(() => deployment.value?.services?.find((s) => s.isWeb) ?? null)
+const webOffline = computed(() => !!webService.value && webService.value.status !== 'running')
 
 const sourceBranch = computed(
   () => deployment.value?.branches?.find((b) => b.role === 'SOURCE') ?? null,
@@ -241,12 +246,25 @@ function onCli(name: string) {
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
-          <a v-if="liveUrl" :href="liveUrl" target="_blank" rel="noopener noreferrer">
+          <a
+            v-if="liveUrl && !webOffline"
+            :href="liveUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Button variant="outline" size="sm">
               <ExternalLink />
               Open
             </Button>
           </a>
+          <span
+            v-else-if="liveUrl && webOffline"
+            class="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive"
+            title="The web service is stopped — start it to bring the site back"
+          >
+            <TriangleAlert class="size-3.5" />
+            Site offline
+          </span>
           <Button
             v-if="isActive"
             variant="outline"
@@ -386,38 +404,94 @@ function onCli(name: string) {
           <div
             v-for="svc in deployment.services"
             :key="svc.id"
-            class="flex items-center justify-between gap-3 bg-card px-4 py-2.5"
+            class="flex items-center justify-between gap-3 px-4 py-2.5"
+            :class="
+              svc.isWeb && svc.status !== 'running'
+                ? 'bg-destructive/5'
+                : svc.isWeb
+                  ? 'bg-primary/[0.04]'
+                  : 'bg-card'
+            "
           >
             <div class="flex min-w-0 items-center gap-2">
               <span
                 class="size-1.5 shrink-0 rounded-full"
-                :class="svc.status === 'running' ? 'bg-success' : 'bg-muted-foreground/40'"
+                :class="
+                  svc.status === 'running'
+                    ? 'bg-success'
+                    : svc.isWeb
+                      ? 'bg-destructive animate-pulse'
+                      : 'bg-muted-foreground/40'
+                "
               />
-              <span class="truncate font-mono text-sm text-foreground">
-                {{ svc.name }}
-                <span v-if="svc.isWeb" class="ml-1 text-xs text-primary">web</span>
+              <span class="truncate font-mono text-sm text-foreground">{{ svc.name }}</span>
+              <Badge v-if="svc.isWeb" variant="default" class="shrink-0 gap-1">
+                <Globe class="size-3" />
+                web
+              </Badge>
+              <span
+                v-if="svc.isWeb && svc.status !== 'running'"
+                class="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-destructive"
+              >
+                <TriangleAlert class="size-3" />
+                Site offline
               </span>
-              <span class="shrink-0 text-xs text-muted-foreground">
+              <span v-else class="shrink-0 text-xs text-muted-foreground">
                 {{ svc.status ?? '—' }}<span v-if="svc.port"> · :{{ svc.port }}</span>
               </span>
             </div>
             <div class="flex shrink-0 items-center gap-0.5">
-              <Button
-                v-if="svc.status === 'running'"
-                variant="ghost"
-                size="icon-sm"
-                title="Stop"
-                class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                :disabled="busyService === svc.name"
-                @click="onServiceAction(svc.name, 'stop')"
-              >
-                <Square />
-              </Button>
+              <template v-if="svc.status === 'running'">
+                <AlertDialog v-if="svc.isWeb">
+                  <AlertDialogTrigger as-child>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      title="Stop (takes the site offline)"
+                      class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      :disabled="busyService === svc.name"
+                    >
+                      <Square />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Stop the web service?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        “{{ svc.name }}” serves this deployment — stopping it takes the site
+                        offline until you start it again.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        class="bg-destructive text-white hover:bg-destructive/90"
+                        :disabled="busyService === svc.name"
+                        @click="onServiceAction(svc.name, 'stop')"
+                      >
+                        <LoaderCircle v-if="busyService === svc.name" class="animate-spin" />
+                        Take offline
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button
+                  v-else
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Stop"
+                  class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  :disabled="busyService === svc.name"
+                  @click="onServiceAction(svc.name, 'stop')"
+                >
+                  <Square />
+                </Button>
+              </template>
               <Button
                 v-else
                 variant="ghost"
                 size="icon-sm"
-                title="Start"
+                :title="svc.isWeb ? 'Start (brings the site back)' : 'Start'"
                 class="text-success hover:bg-success/10 hover:text-success"
                 :disabled="busyService === svc.name"
                 @click="onServiceAction(svc.name, 'start')"
