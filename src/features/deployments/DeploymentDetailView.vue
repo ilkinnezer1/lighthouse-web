@@ -33,6 +33,7 @@ import { useDeploymentLogs } from './useDeploymentLogs'
 import { useRuntimeLogs } from './useRuntimeLogs'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
+import ServiceTerminal from './ServiceTerminal.vue'
 import {
   isTerminalStatus,
   stageTone,
@@ -195,8 +196,12 @@ async function onServiceAction(name: string, action: ServiceAction) {
   }
 }
 
+const terminalOpen = ref(false)
+const terminalService = ref<string | undefined>(undefined)
+
 function onCli(name: string) {
-  toast.info(`Terminal for ${name} coming soon`)
+  terminalService.value = name
+  terminalOpen.value = true
 }
 </script>
 
@@ -509,6 +514,7 @@ function onCli(name: string) {
                 <RotateCw :class="busyService === svc.name && 'animate-spin'" />
               </Button>
               <Button
+                v-if="svc.status === 'running'"
                 variant="ghost"
                 size="icon-sm"
                 title="Open terminal"
@@ -612,5 +618,11 @@ function onCli(name: string) {
         </div>
       </section>
     </template>
+
+    <ServiceTerminal
+      v-model:open="terminalOpen"
+      :deployment-id="props.id"
+      :service="terminalService"
+    />
   </div>
 </template>

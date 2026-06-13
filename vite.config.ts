@@ -26,6 +26,14 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      // Dev-only: routes the terminal at the local mock exec gateway
+      // (~/lighthouse-exec-mock) same-origin, so it works like /socket.io.
+      // Inert unless VITE_EXEC_PATH=/exec-io is set when starting the client.
+      '/exec-io': {
+        target: 'http://localhost:3009',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 })

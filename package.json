@@ -13,6 +13,8 @@
     "@tanstack/vue-query": "^5.100.14",
     "@vee-validate/zod": "^4.15.1",
     "@vueuse/core": "^14.3.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "axios": "^1.16.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
