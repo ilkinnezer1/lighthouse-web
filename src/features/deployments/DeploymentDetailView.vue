@@ -39,7 +39,10 @@ import { useRuntimeLogs } from './useRuntimeLogs'
 import { useDeploymentAction } from './useDeploymentAction'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
+import ServiceHealthBadge from './ServiceHealthBadge.vue'
+import ServiceStatsReadout from './ServiceStatsReadout.vue'
 import ServiceTerminal from './ServiceTerminal.vue'
+import type { HealthTone } from './serviceHealth'
 import {
   isTerminalStatus,
   stageTone,
@@ -126,7 +129,20 @@ const liveUrl = computed(() => {
   return d && (d.status === 'RUNNING' || d.status === 'SUCCEEDED') ? d.url : null
 })
 const webService = computed(() => deployment.value?.services?.find((s) => s.isWeb) ?? null)
-const webOffline = computed(() => !!webService.value && webService.value.status !== 'running')
+
+// Live container tone per service (reported by each row's health badge), so the
+// page reflects TRUE state rather than the possibly-stale DB `service.status`.
+const liveTone = ref<Record<string, HealthTone>>({})
+function onServiceTone(name: string, tone: HealthTone) {
+  liveTone.value = { ...liveTone.value, [name]: tone }
+}
+function serviceDown(svc: { name: string; status: string | null }): boolean {
+  const live = liveTone.value[svc.name]
+  // Fall back to the DB status only until the live tone has been reported.
+  return live ? live === 'down' : svc.status !== 'running'
+}
+
+const webOffline = computed(() => !!webService.value && serviceDown(webService.value))
 
 const sourceBranch = computed(
   () => deployment.value?.branches?.find((b) => b.role === 'SOURCE') ?? null,
@@ -219,6 +235,10 @@ const maintLines = maint.lines
 const maintExitCode = maint.exitCode
 const maintError = maint.errorMessage
 const maintAction = maint.activeAction
+
+// The /deployments/:id route reuses this component on a param change, so the
+// composable's state would otherwise carry the prior deployment's run.
+watch(() => props.id, () => maint.reset())
 
 function runMaintenance(action: MaintenanceActionDef) {
   maint.run(action)
@@ -440,7 +460,7 @@ watch(
             :key="svc.id"
             class="flex items-center justify-between gap-3 px-4 py-2.5"
             :class="
-              svc.isWeb && svc.status !== 'running'
+              svc.isWeb && serviceDown(svc)
                 ? 'bg-destructive/5'
                 : svc.isWeb
                   ? 'bg-primary/[0.04]'
@@ -448,31 +468,29 @@ watch(
             "
           >
             <div class="flex min-w-0 items-center gap-2">
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="
-                  svc.status === 'running'
-                    ? 'bg-success'
-                    : svc.isWeb
-                      ? 'bg-destructive animate-pulse'
-                      : 'bg-muted-foreground/40'
-                "
-              />
-              <span class="truncate font-mono text-sm text-foreground">{{ svc.name }}</span>
-              <Badge v-if="svc.isWeb" variant="default" class="shrink-0 gap-1">
-                <Globe class="size-3" />
-                web
-              </Badge>
-              <span
-                v-if="svc.isWeb && svc.status !== 'running'"
-                class="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-destructive"
+              <ServiceHealthBadge
+                :deployment-id="props.id"
+                :service="svc.name"
+                :is-web="svc.isWeb"
+                :db-status="svc.status"
+                :has-container="!!svc.containerId"
+                :port="svc.port"
+                @tone="(t) => onServiceTone(svc.name, t)"
               >
-                <TriangleAlert class="size-3" />
-                Site offline
-              </span>
-              <span v-else class="shrink-0 text-xs text-muted-foreground">
-                {{ svc.status ?? '—' }}<span v-if="svc.port"> · :{{ svc.port }}</span>
-              </span>
+                {{ svc.name }}
+                <template #after-name>
+                  <Badge v-if="svc.isWeb" variant="default" class="shrink-0 gap-1">
+                    <Globe class="size-3" />
+                    web
+                  </Badge>
+                </template>
+              </ServiceHealthBadge>
+              <ServiceStatsReadout
+                v-if="svc.status === 'running'"
+                :deployment-id="props.id"
+                :service="svc.name"
+                :enabled="svc.status === 'running'"
+              />
             </div>
             <div class="flex shrink-0 items-center gap-0.5">
               <template v-if="svc.status === 'running'">
@@ -720,7 +738,7 @@ watch(
           >
             <span
               class="size-1.5 rounded-full"
-              :class="svc.status === 'running' ? 'bg-success' : 'bg-muted-foreground/40'"
+              :class="serviceDown(svc) ? 'bg-muted-foreground/40' : 'bg-success'"
             />
             {{ svc.name }}
             <span v-if="svc.isWeb" class="text-[10px] opacity-70">web</span>

@@ -121,6 +121,29 @@ export interface Service {
   status: string | null
 }
 
+export interface ServiceStats {
+  service: string
+  cpuPct: number
+  memUsedBytes: number
+  memLimitBytes: number
+  // Cumulative byte counters since container start (not rates).
+  netRxBytes: number
+  netTxBytes: number
+  blkReadBytes: number
+  blkWriteBytes: number
+}
+
+// The TRUE container state inspected from the runtime, independent of the DB
+// `service.status` (which can be stale). `state: "missing"` = no such container;
+// `health: "none"` = the image declares no HEALTHCHECK.
+export interface ServiceHealth {
+  service: string
+  state: 'running' | 'exited' | 'created' | 'restarting' | 'paused' | 'dead' | 'missing'
+  health: 'healthy' | 'unhealthy' | 'starting' | 'none'
+  restartCount: number
+  exitCode: number
+}
+
 export interface RepoBranch {
   name: string
   sha: string

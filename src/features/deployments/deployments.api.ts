@@ -5,6 +5,8 @@ import type {
   DeploymentListPage,
   ListDeploymentsParams,
   MaintenanceActionDef,
+  ServiceHealth,
+  ServiceStats,
 } from '@/types/api'
 
 export async function listDeployments(envId: string) {
@@ -56,6 +58,20 @@ export async function actOnService(
 ) {
   const { data } = await api.post<ServiceActionResult>(
     `/deployments/${deploymentId}/services/${encodeURIComponent(name)}/${action}`,
+  )
+  return data
+}
+
+export async function getServiceStats(deploymentId: string, service: string) {
+  const { data } = await api.get<ServiceStats>(
+    `/deployments/${deploymentId}/services/${encodeURIComponent(service)}/stats`,
+  )
+  return data
+}
+
+export async function getServiceHealth(deploymentId: string, service: string) {
+  const { data } = await api.get<ServiceHealth>(
+    `/deployments/${deploymentId}/services/${encodeURIComponent(service)}/health`,
   )
   return data
 }

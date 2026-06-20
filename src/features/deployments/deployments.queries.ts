@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { isAxiosError } from 'axios'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { useCursorFeed } from '@/lib/feed'
 import type { CreateDeploymentInput, Deployment, DeploymentStatus } from '@/types/api'
@@ -8,6 +9,8 @@ import {
   createDeployment,
   getDeployment,
   getDeploymentActions,
+  getServiceHealth,
+  getServiceStats,
   listAllDeployments,
   listDeployments,
   redeployDeployment,
@@ -78,6 +81,50 @@ export function useDeploymentActions(id: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => [...deploymentKeys.detail(toValue(id)), 'actions']),
     queryFn: () => getDeploymentActions(toValue(id)),
+  })
+}
+
+// A running service whose container is gone (e.g. an exited one-shot init
+// container) returns 404 — give up rather than poll/retry a stat that will
+// never come back; transient 5xx/network blips keep polling.
+function isNotFound(err: unknown): boolean {
+  return isAxiosError(err) && err.response?.status === 404
+}
+
+export function useServiceStats(
+  deploymentId: MaybeRefOrGetter<string>,
+  service: MaybeRefOrGetter<string>,
+  opts?: { enabled?: MaybeRefOrGetter<boolean> },
+) {
+  return useQuery({
+    queryKey: computed(() => [
+      ...deploymentKeys.detail(toValue(deploymentId)),
+      'stats',
+      toValue(service),
+    ]),
+    queryFn: () => getServiceStats(toValue(deploymentId), toValue(service)),
+    enabled: computed(() => toValue(opts?.enabled) ?? true),
+    retry: (failureCount, err) => !isNotFound(err) && failureCount < 2,
+    refetchInterval: (query) => (isNotFound(query.state.error) ? false : 4000),
+  })
+}
+
+export function useServiceHealth(
+  deploymentId: MaybeRefOrGetter<string>,
+  service: MaybeRefOrGetter<string>,
+  opts?: { enabled?: MaybeRefOrGetter<boolean> },
+) {
+  return useQuery({
+    queryKey: computed(() => [
+      ...deploymentKeys.detail(toValue(deploymentId)),
+      'health',
+      toValue(service),
+    ]),
+    queryFn: () => getServiceHealth(toValue(deploymentId), toValue(service)),
+    enabled: computed(() => toValue(opts?.enabled) ?? true),
+    retry: (failureCount, err) => !isNotFound(err) && failureCount < 2,
+    // Container state shifts slowly — poll at a calmer cadence than stats (4s).
+    refetchInterval: (query) => (isNotFound(query.state.error) ? false : 10000),
   })
 }
 
