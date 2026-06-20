@@ -7,6 +7,7 @@ import {
   cancelDeployment,
   createDeployment,
   getDeployment,
+  getDeploymentActions,
   listAllDeployments,
   listDeployments,
   redeployDeployment,
@@ -70,6 +71,13 @@ export function useDeployment(id: MaybeRefOrGetter<string>) {
       const status = query.state.data?.status
       return status && isTerminalStatus(status) ? false : 4000
     },
+  })
+}
+
+export function useDeploymentActions(id: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: computed(() => [...deploymentKeys.detail(toValue(id)), 'actions']),
+    queryFn: () => getDeploymentActions(toValue(id)),
   })
 }
 

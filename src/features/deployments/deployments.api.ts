@@ -4,6 +4,7 @@ import type {
   Deployment,
   DeploymentListPage,
   ListDeploymentsParams,
+  MaintenanceActionDef,
 } from '@/types/api'
 
 export async function listDeployments(envId: string) {
@@ -57,4 +58,29 @@ export async function actOnService(
     `/deployments/${deploymentId}/services/${encodeURIComponent(name)}/${action}`,
   )
   return data
+}
+
+export async function getDeploymentActions(deploymentId: string) {
+  const { data } = await api.get<{ actions: MaintenanceActionDef[] }>(
+    `/deployments/${deploymentId}/actions`,
+  )
+  return data.actions
+}
+
+// Triggers a maintenance action and returns the raw streaming Response — axios
+// can't stream a body, so callers read `res.body` directly (like runtime logs).
+export function runDeploymentAction(
+  deploymentId: string,
+  actionId: string,
+  signal: AbortSignal,
+) {
+  return fetch(
+    `/api/deployments/${deploymentId}/actions/${encodeURIComponent(actionId)}`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      signal,
+      headers: { Accept: 'text/plain' },
+    },
+  )
 }

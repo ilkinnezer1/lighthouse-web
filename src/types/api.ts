@@ -50,6 +50,18 @@ export interface BuildConfig {
   cmd?: string[]
   envs?: Record<string, string>
   dbMigrate?: string[]
+  maintenanceActions?: MaintenanceActionConfig[]
+}
+
+// A maintenance action as stored in buildConfig — includes the server-side
+// `command`. The public deployment endpoint returns MaintenanceActionDef, which
+// omits the command (the client triggers by id only).
+export interface MaintenanceActionConfig {
+  id: string
+  label: string
+  service: string
+  command: string
+  destructive?: boolean
 }
 
 export interface Environment {
@@ -311,6 +323,15 @@ export interface LogEntry {
   id: string
   line: string
   stage: string | null
+}
+
+// A curated maintenance action surfaced on the deployment page. The command
+// stays server-side; the client triggers by id only.
+export interface MaintenanceActionDef {
+  id: string
+  label: string
+  service: string
+  destructive: boolean
 }
 
 export interface OutboxEvent<T = Record<string, unknown>> {

@@ -4,8 +4,9 @@ import { LoaderCircle, Plus, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useUpdateProject } from './projects.queries'
 import { apiErrorMessage } from '@/lib/api'
-import type { BuildConfig, Project } from '@/types/api'
+import type { BuildConfig, MaintenanceActionConfig, Project } from '@/types/api'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -36,6 +37,10 @@ const web = ref('')
 const cmdText = ref('')
 const dbMigrateText = ref('')
 const envRows = ref<{ key: string; value: string }[]>([])
+// Maintenance actions keep their stored id so the deployment "Run" buttons stay
+// stable across edits; new rows get an id derived from the label at save time.
+type MaintRow = { id: string; label: string; service: string; command: string; destructive: boolean }
+const maintRows = ref<MaintRow[]>([])
 const saving = ref(false)
 
 function seedFromProject() {
@@ -45,6 +50,13 @@ function seedFromProject() {
   cmdText.value = (bc.cmd ?? []).join(' ')
   dbMigrateText.value = (bc.dbMigrate ?? []).join(' ')
   envRows.value = Object.entries(bc.envs ?? {}).map(([key, value]) => ({ key, value }))
+  maintRows.value = (bc.maintenanceActions ?? []).map((a) => ({
+    id: a.id,
+    label: a.label,
+    service: a.service,
+    command: a.command,
+    destructive: a.destructive ?? false,
+  }))
 }
 
 watch(open, (isOpen) => {
@@ -56,6 +68,20 @@ function addEnvRow() {
 }
 function removeEnvRow(i: number) {
   envRows.value.splice(i, 1)
+}
+
+function addMaintRow() {
+  maintRows.value.push({ id: '', label: '', service: '', command: '', destructive: false })
+}
+function removeMaintRow(i: number) {
+  maintRows.value.splice(i, 1)
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 // buildConfig is replaced wholesale on PATCH — assemble the complete object,
@@ -73,6 +99,26 @@ function assemble(): BuildConfig {
     if (key.trim()) envs[key.trim()] = value
   }
   if (Object.keys(envs).length) bc.envs = envs
+
+  // Keep only fully-specified rows; derive an id from the label for new rows and
+  // keep ids unique so each action's Run button maps to exactly one command.
+  const actions: MaintenanceActionConfig[] = []
+  const usedIds = new Set<string>()
+  for (const row of maintRows.value) {
+    const label = row.label.trim()
+    const service = row.service.trim()
+    const command = row.command.trim()
+    if (!label || !service || !command) continue
+    const base = (row.id.trim() || slugify(label)) || 'action'
+    let id = base
+    for (let n = 2; usedIds.has(id); n++) id = `${base}-${n}`
+    usedIds.add(id)
+    const action: MaintenanceActionConfig = { id, label, service, command }
+    if (row.destructive) action.destructive = true
+    actions.push(action)
+  }
+  if (actions.length) bc.maintenanceActions = actions
+
   return bc
 }
 
@@ -188,6 +234,53 @@ async function onSave() {
             >
               <X />
             </Button>
+          </div>
+        </div>
+
+        <!-- maintenance actions -->
+        <div class="grid gap-2">
+          <div class="flex items-center justify-between">
+            <Label>Maintenance actions</Label>
+            <Button type="button" variant="ghost" size="sm" @click="addMaintRow">
+              <Plus />
+              Add
+            </Button>
+          </div>
+          <p class="text-xs text-muted-foreground">
+            One-click commands shown on each deployment. The command runs in the named service's
+            live container; the value stays server-side and is never sent to the browser.
+          </p>
+          <div v-if="maintRows.length === 0" class="text-xs text-muted-foreground">
+            No actions set.
+          </div>
+          <div
+            v-for="(row, i) in maintRows"
+            :key="i"
+            class="grid gap-2 rounded-lg border border-border p-3"
+          >
+            <div class="flex items-center gap-2">
+              <Input v-model="row.label" placeholder="Label (e.g. Run migrations)" class="text-sm" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                class="shrink-0 text-muted-foreground"
+                title="Remove"
+                @click="removeMaintRow(i)"
+              >
+                <X />
+              </Button>
+            </div>
+            <Input v-model="row.service" placeholder="service (e.g. web)" class="font-mono text-sm" />
+            <Input
+              v-model="row.command"
+              placeholder="command (e.g. php artisan migrate --force)"
+              class="font-mono text-sm"
+            />
+            <label class="flex items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox v-model="row.destructive" />
+              Confirm before running (destructive)
+            </label>
           </div>
         </div>
       </div>
