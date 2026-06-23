@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { LoaderCircle, Plus, X } from '@lucide/vue'
+import { ChevronDown, ChevronUp, LoaderCircle, Plus, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useUpdateProject } from './projects.queries'
 import { apiErrorMessage } from '@/lib/api'
-import type { BuildConfig, MaintenanceActionConfig, Project } from '@/types/api'
+import type { BuildConfig, MaintenanceActionConfig, Project, SetupStep } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -41,6 +41,10 @@ const envRows = ref<{ key: string; value: string }[]>([])
 // stable across edits; new rows get an id derived from the label at save time.
 type MaintRow = { id: string; label: string; service: string; command: string; destructive: boolean }
 const maintRows = ref<MaintRow[]>([])
+const composePath = ref('')
+// `advanced` reveals the per-step image/docker controls; not persisted.
+type SetupRow = { command: string; image: string; docker: boolean; advanced: boolean }
+const setupRows = ref<SetupRow[]>([])
 const saving = ref(false)
 
 function seedFromProject() {
@@ -56,6 +60,13 @@ function seedFromProject() {
     service: a.service,
     command: a.command,
     destructive: a.destructive ?? false,
+  }))
+  composePath.value = bc.composePath ?? ''
+  setupRows.value = (bc.setupSteps ?? []).map((s) => ({
+    command: s.command,
+    image: s.image ?? '',
+    docker: s.docker ?? false,
+    advanced: !!(s.image || s.docker),
   }))
 }
 
@@ -75,6 +86,19 @@ function addMaintRow() {
 }
 function removeMaintRow(i: number) {
   maintRows.value.splice(i, 1)
+}
+
+function addSetupRow() {
+  setupRows.value.push({ command: '', image: '', docker: false, advanced: false })
+}
+function removeSetupRow(i: number) {
+  setupRows.value.splice(i, 1)
+}
+function moveSetupRow(i: number, delta: number) {
+  const j = i + delta
+  if (j < 0 || j >= setupRows.value.length) return
+  const rows = setupRows.value
+  ;[rows[i], rows[j]] = [rows[j], rows[i]]
 }
 
 function slugify(s: string): string {
@@ -118,6 +142,22 @@ function assemble(): BuildConfig {
     actions.push(action)
   }
   if (actions.length) bc.maintenanceActions = actions
+
+  if (composePath.value.trim()) bc.composePath = composePath.value.trim()
+
+  // Keep only steps with a command; omit empty image/docker so the API's
+  // .strict() per-step schema stays happy.
+  const steps: SetupStep[] = []
+  for (const row of setupRows.value) {
+    const command = row.command.trim()
+    if (!command) continue
+    const step: SetupStep = { command }
+    const image = row.image.trim()
+    if (image) step.image = image
+    if (row.docker) step.docker = true
+    steps.push(step)
+  }
+  if (steps.length) bc.setupSteps = steps
 
   return bc
 }
@@ -169,6 +209,105 @@ async function onSave() {
           </div>
           <p class="text-xs text-muted-foreground">
             Auto-detect picks Dockerfile, then compose, then sandbox.yml from the repo.
+          </p>
+        </div>
+
+        <!-- setup steps -->
+        <div class="grid gap-2">
+          <div class="flex items-center justify-between">
+            <Label>Setup steps</Label>
+            <Button type="button" variant="ghost" size="sm" @click="addSetupRow">
+              <Plus />
+              Add
+            </Button>
+          </div>
+          <p class="text-xs text-muted-foreground">
+            Runs after clone, before build, with your environment variables and files available. A
+            failed step fails the deploy.
+          </p>
+          <div v-if="setupRows.length === 0" class="text-xs text-muted-foreground">
+            No setup steps.
+          </div>
+          <div
+            v-for="(row, i) in setupRows"
+            :key="i"
+            class="grid gap-2 rounded-lg border border-border p-3"
+          >
+            <div class="flex items-center gap-2">
+              <div class="flex shrink-0 flex-col">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  class="size-5 text-muted-foreground"
+                  title="Move up"
+                  :disabled="i === 0"
+                  @click="moveSetupRow(i, -1)"
+                >
+                  <ChevronUp />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  class="size-5 text-muted-foreground"
+                  title="Move down"
+                  :disabled="i === setupRows.length - 1"
+                  @click="moveSetupRow(i, 1)"
+                >
+                  <ChevronDown />
+                </Button>
+              </div>
+              <Input
+                v-model="row.command"
+                placeholder="make setup"
+                class="font-mono text-sm"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                class="shrink-0 text-muted-foreground"
+                title="Remove"
+                @click="removeSetupRow(i)"
+              >
+                <X />
+              </Button>
+            </div>
+            <button
+              type="button"
+              class="w-fit text-xs text-muted-foreground transition-colors hover:text-foreground"
+              @click="row.advanced = !row.advanced"
+            >
+              {{ row.advanced ? 'Hide advanced' : 'Advanced' }}
+            </button>
+            <div v-if="row.advanced" class="grid gap-2 pl-1">
+              <Input
+                v-model="row.image"
+                placeholder="image with your script's tools, default alpine"
+                class="font-mono text-sm"
+              />
+              <label class="flex items-center gap-2 text-xs text-muted-foreground">
+                <Checkbox v-model="row.docker" />
+                Script needs Docker
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- compose file path -->
+        <div class="grid gap-2">
+          <Label for="bc-compose">
+            Compose file path <span class="text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            id="bc-compose"
+            v-model="composePath"
+            placeholder="docker-compose.yml"
+            class="font-mono text-sm"
+          />
+          <p class="text-xs text-muted-foreground">
+            e.g. docker/.docker-compose.yml if your compose isn't at the repo root.
           </p>
         </div>
 

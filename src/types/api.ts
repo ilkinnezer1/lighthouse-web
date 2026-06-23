@@ -51,6 +51,16 @@ export interface BuildConfig {
   envs?: Record<string, string>
   dbMigrate?: string[]
   maintenanceActions?: MaintenanceActionConfig[]
+  composePath?: string
+  setupSteps?: SetupStep[]
+}
+
+// Ordered shell commands that run after clone, before build, to generate a
+// project's compose/.env. A failed step fails the deploy.
+export interface SetupStep {
+  command: string
+  image?: string
+  docker?: boolean
 }
 
 // A maintenance action as stored in buildConfig — includes the server-side
