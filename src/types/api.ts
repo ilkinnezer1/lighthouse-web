@@ -300,6 +300,33 @@ export interface SetEnvVarsInput {
   dotenv?: string
 }
 
+export interface ManagedFile {
+  path: string
+  content: string
+  updatedAt: string
+}
+
+export interface SaveManagedFileInput {
+  path: string
+  content: string
+}
+
+export interface ProjectFileEntry {
+  name: string
+  path: string
+  type: 'file' | 'dir'
+  size: number
+  overridden: boolean
+}
+
+export interface ProjectFileContent {
+  path: string
+  content: string
+  overridden: boolean
+  binary: boolean
+  truncated: boolean
+}
+
 export interface LoginInput {
   email: string
   password: string
