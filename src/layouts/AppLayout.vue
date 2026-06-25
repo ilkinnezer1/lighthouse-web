@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { Database, FolderGit2, LogOut, Rocket, ScrollText } from '@lucide/vue'
+import { Database, FolderGit2, LogOut, Plug, Rocket, ScrollText } from '@lucide/vue'
 import Logo from '@/components/Logo.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/features/auth/auth.store'
@@ -56,6 +56,15 @@ const navBase =
         >
           <Database class="size-4" />
           Databases
+        </RouterLink>
+
+        <RouterLink
+          to="/integrations"
+          :class="[navBase, 'text-muted-foreground hover:bg-accent hover:text-foreground']"
+          active-class="bg-accent! text-foreground!"
+        >
+          <Plug class="size-4" />
+          Integrations
         </RouterLink>
 
         <RouterLink
