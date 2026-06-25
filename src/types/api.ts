@@ -390,6 +390,35 @@ export interface UpdateProjectInput {
   buildConfig?: BuildConfig
 }
 
+// A connected Git provider account (GitHub only in v1). Never carries the token.
+export interface Connection {
+  provider: 'github'
+  accountLogin: string
+  scopes: string[]
+  connectedAt: string
+}
+
+export interface RepoSummary {
+  fullName: string
+  name: string
+  owner: string
+  private: boolean
+  defaultBranch: string
+  description: string | null
+  language: string | null
+  pushedAt: string
+  htmlUrl: string
+}
+
+// Seeds the Create-Project dialog when deploying a repo from Integrations.
+// `providerRepoFullName` is display-only — the API re-derives it from `repoUrl`.
+export interface ProjectPrefill {
+  name: string
+  repoUrl: string
+  providerRepoFullName?: string
+  defaultBranch?: string
+}
+
 export type CreateDatabaseInput =
   | { mode: 'attach-existing'; databaseId: string }
   | {
