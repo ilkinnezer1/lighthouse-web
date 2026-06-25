@@ -300,6 +300,34 @@ export interface ListDatabasesParams {
   projectId?: string
 }
 
+// `id`/`cursor` are BigInt serialized as opaque strings — never coerce to number.
+export interface AuditRow {
+  id: string
+  action: string
+  resourceType: string | null
+  resourceId: string | null
+  actor: { id: string; email: string } | null
+  ip: string | null
+  userAgent: string | null
+  createdAt: string
+  afterJson: Record<string, unknown> | null
+}
+
+export interface AuditListPage {
+  items: AuditRow[]
+  nextCursor: string | null
+}
+
+export interface ListAuditParams {
+  limit?: number
+  cursor?: string
+  action?: string
+  resourceType?: string
+  resourceId?: string
+  from?: string
+  to?: string
+}
+
 export interface EnvVar {
   key: string
   value: string
