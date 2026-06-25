@@ -7,7 +7,7 @@ import { toast } from 'vue-sonner'
 import { createProjectSchema } from './projects.schemas'
 import { useCreateProject } from './projects.queries'
 import { apiErrorMessage } from '@/lib/api'
-import type { CreateProjectInput, Project } from '@/types/api'
+import type { CreateProjectInput, Project, ProjectPrefill } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -27,6 +27,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 
+const props = defineProps<{ prefill?: ProjectPrefill }>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ created: [project: Project] }>()
 
@@ -36,7 +37,17 @@ const { handleSubmit, isSubmitting, resetForm } = useForm({
 })
 
 watch(open, (isOpen) => {
-  if (isOpen) resetForm()
+  if (!isOpen) return
+  resetForm({
+    values: props.prefill
+      ? {
+          name: props.prefill.name,
+          repoUrl: props.prefill.repoUrl,
+          subdomain: '',
+          defaultBranch: props.prefill.defaultBranch ?? '',
+        }
+      : undefined,
+  })
 })
 
 const onSubmit = handleSubmit(async (values) => {
@@ -63,7 +74,12 @@ const onSubmit = handleSubmit(async (values) => {
       <DialogHeader>
         <DialogTitle>New project</DialogTitle>
         <DialogDescription>
-          Point Lighthouse at a public Git repository to deploy it.
+          <template v-if="prefill?.providerRepoFullName">
+            Deploy
+            <span class="font-mono text-foreground">{{ prefill.providerRepoFullName }}</span>
+            — confirm the details below.
+          </template>
+          <template v-else> Point Lighthouse at a public Git repository to deploy it. </template>
         </DialogDescription>
       </DialogHeader>
 

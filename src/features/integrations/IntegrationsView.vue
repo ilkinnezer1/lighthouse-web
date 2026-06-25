@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
@@ -7,6 +7,8 @@ import ConnectionCard from './ConnectionCard.vue'
 import IntegrationsGuide from './IntegrationsGuide.vue'
 import RepoBrowser from './RepoBrowser.vue'
 import { integrationKeys, useConnections } from './integrations.queries'
+import CreateProjectDialog from '@/features/projects/CreateProjectDialog.vue'
+import type { Project, ProjectPrefill, RepoSummary } from '@/types/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,6 +20,28 @@ const connection = computed(
   () => data.value?.connections.find((c) => c.provider === 'github') ?? null,
 )
 const isConnected = computed(() => !!connection.value)
+
+// The live API has no "configured" flag and its connect 503 is a direct server
+// response, so the only SPA-visible signal is this callback error code. Captured
+// from the query param (which onMounted clears) so the panel persists.
+const notConfigured = ref(false)
+
+const dialogOpen = ref(false)
+const prefill = ref<ProjectPrefill>()
+
+function onDeploy(repo: RepoSummary) {
+  prefill.value = {
+    name: repo.name,
+    repoUrl: `${repo.htmlUrl}.git`,
+    providerRepoFullName: repo.fullName,
+    defaultBranch: repo.defaultBranch,
+  }
+  dialogOpen.value = true
+}
+
+function onCreated(project: Project) {
+  router.push(`/projects/${project.id}`)
+}
 
 const errorMessages: Record<string, string> = {
   github_connect_failed: 'GitHub connection failed. Please try again.',
@@ -32,6 +56,7 @@ onMounted(() => {
     qc.invalidateQueries({ queryKey: integrationKeys.all })
   } else if (typeof error === 'string') {
     toast.error(errorMessages[error] ?? 'Could not connect GitHub.')
+    if (error === 'github_not_configured') notConfigured.value = true
   }
   if (connected || error) router.replace({ query: {} })
 })
@@ -47,12 +72,18 @@ onMounted(() => {
     </header>
 
     <div class="mt-6 space-y-4">
-      <ConnectionCard :connection="connection" :loading="isPending" />
+      <ConnectionCard
+        :connection="connection"
+        :loading="isPending"
+        :not-configured="notConfigured"
+      />
       <IntegrationsGuide />
     </div>
 
     <div class="mt-8">
-      <RepoBrowser :connected="isConnected" />
+      <RepoBrowser :connected="isConnected" @deploy="onDeploy" />
     </div>
+
+    <CreateProjectDialog v-model:open="dialogOpen" :prefill="prefill" @created="onCreated" />
   </div>
 </template>
