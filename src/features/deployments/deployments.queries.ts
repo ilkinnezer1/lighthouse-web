@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { isAxiosError } from 'axios'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { useCursorFeed } from '@/lib/feed'
 import type { CreateDeploymentInput, Deployment, DeploymentStatus } from '@/types/api'
 import {
@@ -37,16 +38,19 @@ export function useDeploymentsFeed(filters: {
   status?: MaybeRefOrGetter<DeploymentStatus | undefined>
   projectId?: MaybeRefOrGetter<string | undefined>
 }) {
+  const active = useActiveOrgStore()
   return useCursorFeed({
     queryKey: computed(() => [
       ...deploymentKeys.all,
       'feed',
+      active.activeOrgId,
       toValue(filters.status) ?? null,
       toValue(filters.projectId) ?? null,
     ]),
     fetchPage: (cursor) =>
       listAllDeployments({
         cursor,
+        orgId: active.activeOrgId ?? undefined,
         status: toValue(filters.status),
         projectId: toValue(filters.projectId),
         limit: 30,

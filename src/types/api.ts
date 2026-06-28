@@ -1,6 +1,84 @@
 // Enums are string unions (tsconfig `erasableSyntaxOnly` forbids TS `enum`).
 export type UserRole = 'USER' | 'ADMIN'
 
+// Org-wide role; mirrors the API's OrgRole enum and drives the capability matrix.
+export type OrgRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
+
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REVOKED' | 'EXPIRED'
+
+// Shape returned by create/rename (ORG_SELECT) — no caller role attached.
+export interface OrgSummary {
+  id: string
+  name: string
+  slug: string
+  isPersonal: boolean
+  createdAt: string
+}
+
+// GET /orgs annotates each org with the caller's own role in it.
+export interface Organization extends OrgSummary {
+  role: OrgRole
+}
+
+export interface OrgMember {
+  userId: string
+  username: string
+  displayName: string | null
+  role: OrgRole
+  joinedAt: string
+}
+
+// An org's pending invite (Admin+ view). Either an in-app invite of an existing
+// user (`invitee` set) or a link invite (`invitee` null, optional `email`).
+export interface OrgInvitation {
+  id: string
+  role: OrgRole
+  status: InvitationStatus
+  email: string | null
+  expiresAt: string
+  createdAt: string
+  invitee: { id: string; username: string; displayName: string | null } | null
+  invitedBy: { username: string }
+}
+
+// The caller's own pending in-app invite (their inbox).
+export interface MyInvitation {
+  id: string
+  role: OrgRole
+  expiresAt: string
+  createdAt: string
+  organization: { id: string; name: string; slug: string }
+  invitedBy: { username: string }
+}
+
+// Minting a link invite returns the one-time URL under `tokenLink` — shown once,
+// never re-fetchable (the DB keeps only its hash).
+export interface InviteLinkResult {
+  id: string
+  role: OrgRole
+  expiresAt: string
+  createdAt: string
+  tokenLink: string
+}
+
+export interface CreateInvitationInput {
+  role: OrgRole
+  username?: string
+  email?: string
+}
+
+// GET /invite/:token preview for the accept page.
+export interface InvitePreview {
+  orgName: string
+  role: OrgRole
+  inviterUsername: string
+}
+
+export interface AcceptLinkResult {
+  orgId: string
+  role: OrgRole
+}
+
 export type EnvironmentType = 'PRODUCTION' | 'PREVIEW' | 'MANUAL'
 
 export type DatabaseType = 'POSTGRES' | 'MYSQL' | 'REDIS' | 'MONGO'
@@ -236,6 +314,7 @@ export interface ListDeploymentsParams {
   cursor?: string
   status?: DeploymentStatus
   projectId?: string
+  orgId?: string
 }
 
 export interface ManagedDatabase {
@@ -298,6 +377,7 @@ export interface ListDatabasesParams {
   status?: DatabaseStatus
   type?: DatabaseType
   projectId?: string
+  orgId?: string
 }
 
 // `id`/`cursor` are BigInt serialized as opaque strings — never coerce to number.
@@ -326,6 +406,7 @@ export interface ListAuditParams {
   resourceId?: string
   from?: string
   to?: string
+  orgId?: string
 }
 
 export interface EnvVar {
@@ -382,6 +463,8 @@ export interface CreateProjectInput {
   repoUrl: string
   subdomain?: string
   defaultBranch?: string
+  // Target org for the new project; defaults to the caller's personal org.
+  organizationId?: string
 }
 
 export interface UpdateProjectInput {

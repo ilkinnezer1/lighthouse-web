@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, ref, toValue } from 'vue'
+import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import type { CreateProjectInput, UpdateProjectInput } from '@/types/api'
 import {
   createProject,
@@ -17,15 +18,17 @@ import {
 
 export const projectKeys = {
   all: ['projects'] as const,
+  list: (orgId: string | null) => ['projects', 'list', orgId] as const,
   detail: (id: string) => ['projects', id] as const,
   branches: (id: string, base?: string) =>
     ['projects', id, 'branches', base ?? null] as const,
 }
 
 export function useProjects() {
+  const active = useActiveOrgStore()
   return useQuery({
-    queryKey: projectKeys.all,
-    queryFn: listProjects,
+    queryKey: computed(() => projectKeys.list(active.activeOrgId)),
+    queryFn: () => listProjects(active.activeOrgId ?? undefined),
   })
 }
 
@@ -76,8 +79,14 @@ export function useProjectBranches(
 
 export function useCreateProject() {
   const qc = useQueryClient()
+  const active = useActiveOrgStore()
   return useMutation({
-    mutationFn: (input: CreateProjectInput) => createProject(input),
+    // Land the project in the active org (the API defaults to personal when absent).
+    mutationFn: (input: CreateProjectInput) =>
+      createProject({
+        ...input,
+        organizationId: input.organizationId ?? active.activeOrgId ?? undefined,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.all }),
   })
 }

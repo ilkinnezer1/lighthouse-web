@@ -87,7 +87,10 @@ const onSubmit = handleSubmit(async (values) => {
 
     <template #footer>
       No account?
-      <RouterLink to="/signup" class="font-medium text-primary hover:underline">
+      <RouterLink
+        :to="{ name: 'signup', query: route.query.redirect ? { redirect: route.query.redirect } : {} }"
+        class="font-medium text-primary hover:underline"
+      >
         Create one
       </RouterLink>
     </template>

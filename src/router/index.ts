@@ -73,7 +73,21 @@ const routes: RouteRecordRaw[] = [
         name: 'audit',
         component: () => import('@/features/audit/AuditView.vue'),
       },
+      {
+        path: 'orgs/:id/settings',
+        name: 'org-settings',
+        component: () => import('@/features/orgs/OrgSettingsView.vue'),
+        props: true,
+      },
     ],
+  },
+  {
+    // Authed: an unauthenticated visit is bounced to login with the token
+    // preserved in `redirect`, then returns here once signed in/up.
+    path: '/invite/:token',
+    name: 'invite-accept',
+    component: () => import('@/features/invitations/InviteAcceptView.vue'),
+    props: true,
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]

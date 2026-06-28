@@ -5,9 +5,17 @@ import { Database, FolderGit2, LogOut, Plug, Rocket, ScrollText } from '@lucide/
 import Logo from '@/components/Logo.vue'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { useActiveOrgStore } from '@/features/orgs/active-org.store'
+import { useCan } from '@/features/orgs/useCan'
+import OrgSwitcher from '@/features/orgs/OrgSwitcher.vue'
+import InvitationsInbox from '@/features/invitations/InvitationsInbox.vue'
 
 const auth = useAuthStore()
+const activeOrg = useActiveOrgStore()
 const router = useRouter()
+
+// The activity feed is Admin+ on the server (Members/Viewers get 403) — hide it.
+const canSeeAudit = useCan('audit.read')
 
 const initial = computed(() => {
   const base = auth.user?.displayName || auth.user?.username || auth.user?.email || '?'
@@ -16,6 +24,8 @@ const initial = computed(() => {
 
 async function onLogout() {
   await auth.logout()
+  // Clear the persisted scope so the next user never inherits it.
+  activeOrg.reset()
   await router.replace({ name: 'login' })
 }
 
@@ -28,6 +38,10 @@ const navBase =
     <aside class="flex flex-col border-r border-border bg-sidebar">
       <div class="flex h-14 items-center px-5">
         <Logo :size="26" />
+      </div>
+
+      <div class="px-3 pb-2">
+        <OrgSwitcher />
       </div>
 
       <nav class="flex-1 space-y-1 px-3 py-2">
@@ -68,6 +82,7 @@ const navBase =
         </RouterLink>
 
         <RouterLink
+          v-if="canSeeAudit"
           to="/audit"
           :class="[navBase, 'text-muted-foreground hover:bg-accent hover:text-foreground']"
           active-class="bg-accent! text-foreground!"
@@ -98,6 +113,9 @@ const navBase =
     </aside>
 
     <div class="flex min-w-0 flex-col">
+      <header class="flex h-14 items-center justify-end border-b border-border px-6">
+        <InvitationsInbox />
+      </header>
       <main class="flex-1 overflow-y-auto">
         <RouterView />
       </main>

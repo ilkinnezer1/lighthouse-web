@@ -1,4 +1,5 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { useCursorFeed } from '@/lib/feed'
 import { listAuditLogs } from './audit.api'
 
@@ -13,10 +14,12 @@ export function useAuditFeed(filters: {
   from?: MaybeRefOrGetter<string | undefined>
   to?: MaybeRefOrGetter<string | undefined>
 }) {
+  const active = useActiveOrgStore()
   return useCursorFeed({
     queryKey: computed(() => [
       ...auditKeys.all,
       'feed',
+      active.activeOrgId,
       toValue(filters.action) ?? null,
       toValue(filters.resourceType) ?? null,
       toValue(filters.resourceId) ?? null,
@@ -26,6 +29,7 @@ export function useAuditFeed(filters: {
     fetchPage: (cursor) =>
       listAuditLogs({
         cursor,
+        orgId: active.activeOrgId ?? undefined,
         action: toValue(filters.action),
         resourceType: toValue(filters.resourceType),
         resourceId: toValue(filters.resourceId),

@@ -1,5 +1,6 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
+import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { useCursorFeed } from '@/lib/feed'
 import type {
   CreateDatabaseInput,
@@ -27,10 +28,12 @@ export function useDatabasesFeed(filters: {
   type?: MaybeRefOrGetter<DatabaseType | undefined>
   projectId?: MaybeRefOrGetter<string | undefined>
 }) {
+  const active = useActiveOrgStore()
   return useCursorFeed({
     queryKey: computed(() => [
       ...databaseKeys.all,
       'feed',
+      active.activeOrgId,
       toValue(filters.status) ?? null,
       toValue(filters.type) ?? null,
       toValue(filters.projectId) ?? null,
@@ -38,6 +41,7 @@ export function useDatabasesFeed(filters: {
     fetchPage: (cursor) =>
       listAllDatabases({
         cursor,
+        orgId: active.activeOrgId ?? undefined,
         status: toValue(filters.status),
         type: toValue(filters.type),
         projectId: toValue(filters.projectId),

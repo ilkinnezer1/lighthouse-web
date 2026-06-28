@@ -16,6 +16,7 @@ import {
 import { toast } from 'vue-sonner'
 import { useDeleteProject, useProject } from './projects.queries'
 import ProjectSettingsDialog from './ProjectSettingsDialog.vue'
+import { useCan } from '@/features/orgs/useCan'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { EnvironmentType } from '@/types/api'
@@ -39,6 +40,8 @@ const router = useRouter()
 
 const { data: project, isPending, isError, error, refetch } = useProject(() => props.id)
 const deleteProject = useDeleteProject()
+const canEditProject = useCan('env.manage')
+const canDeleteProject = useCan('project.delete')
 
 const showSecret = ref(false)
 const showSettings = ref(false)
@@ -114,11 +117,11 @@ async function onDelete() {
         </div>
 
         <div class="flex items-center gap-2">
-          <Button variant="outline" size="sm" @click="showSettings = true">
+          <Button v-if="canEditProject" variant="outline" size="sm" @click="showSettings = true">
             <Settings2 />
             Settings
           </Button>
-          <AlertDialog>
+          <AlertDialog v-if="canDeleteProject">
           <AlertDialogTrigger as-child>
             <Button variant="outline" size="sm" class="text-destructive hover:text-destructive">
               <Trash2 />

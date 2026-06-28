@@ -13,6 +13,7 @@ import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
 import EnvVarsSection from '@/features/env-vars/EnvVarsSection.vue'
 import EnvFilesSection from '@/features/env-files/EnvFilesSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
+import { useCan } from '@/features/orgs/useCan'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,9 @@ const showDeploy = ref(false)
 function onDeployed(dep: Deployment) {
   router.push(`/deployments/${dep.id}`)
 }
+
+const canDeploy = useCan('deploy')
+const canManageEnv = useCan('env.manage')
 </script>
 
 <template>
@@ -62,7 +66,7 @@ function onDeployed(dep: Deployment) {
         </h1>
         <Badge v-if="env" variant="secondary" class="font-mono">{{ env.branch ?? '—' }}</Badge>
       </div>
-      <Button @click="showDeploy = true">
+      <Button v-if="canDeploy" @click="showDeploy = true">
         <Rocket />
         Deploy
       </Button>
@@ -141,7 +145,13 @@ function onDeployed(dep: Deployment) {
     <section class="mt-10">
       <div class="flex items-center justify-between gap-4">
         <h2 class="text-sm font-semibold tracking-tight text-foreground">Databases</h2>
-        <Button size="sm" variant="outline" :disabled="!project" @click="showCreateDb = true">
+        <Button
+          v-if="canManageEnv"
+          size="sm"
+          variant="outline"
+          :disabled="!project"
+          @click="showCreateDb = true"
+        >
           <Plus />
           Add database
         </Button>

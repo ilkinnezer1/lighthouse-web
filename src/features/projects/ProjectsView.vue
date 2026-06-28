@@ -4,6 +4,7 @@ import {useRouter} from 'vue-router'
 import {FolderGit2, GitBranch, Plus, RotateCcw} from '@lucide/vue'
 import {useProjects} from './projects.queries'
 import CreateProjectDialog from './CreateProjectDialog.vue'
+import {useCan} from '@/features/orgs/useCan'
 import {relativeTime} from '@/lib/time'
 import {apiErrorMessage} from '@/lib/api'
 import type {Project} from '@/types/api'
@@ -13,6 +14,7 @@ import {Skeleton} from '@/components/ui/skeleton'
 
 const router = useRouter()
 const {data: projects, isPending, isError, error, refetch} = useProjects()
+const canCreate = useCan('project.create')
 const dialogOpen = ref(false)
 
 function repoLabel(p: Project) {
@@ -34,7 +36,7 @@ function goToProject(id: string) {
         <h1 class="text-2xl font-semibold tracking-tight text-foreground">Projects</h1>
         <p class="mt-1 text-sm text-muted-foreground">Connect a Git repo and deploy it.</p>
       </div>
-      <Button @click="dialogOpen = true">
+      <Button v-if="canCreate" @click="dialogOpen = true">
         <Plus/>
         New project
       </Button>
@@ -73,7 +75,7 @@ function goToProject(id: string) {
       <p class="mt-1 max-w-sm text-sm text-muted-foreground">
         Connect a public Git repository to deploy it with Lighthouse.
       </p>
-      <Button class="mt-5" @click="dialogOpen = true">
+      <Button v-if="canCreate" class="mt-5" @click="dialogOpen = true">
         <Plus/>
         New project
       </Button>

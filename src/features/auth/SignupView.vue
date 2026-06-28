@@ -2,7 +2,7 @@
 import {ref} from 'vue'
 import {useForm} from 'vee-validate'
 import {toTypedSchema} from '@vee-validate/zod'
-import {useRouter, RouterLink} from 'vue-router'
+import {useRoute, useRouter, RouterLink} from 'vue-router'
 import {LoaderCircle} from '@lucide/vue'
 import AuthShell from './AuthShell.vue'
 import {signupSchema} from './auth.schemas'
@@ -21,6 +21,7 @@ import {
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const serverError = ref<string | null>(null)
 
 const {handleSubmit, isSubmitting} = useForm({
@@ -36,7 +37,9 @@ const onSubmit = handleSubmit(async (values) => {
       password: values.password,
       displayName: values.displayName?.trim() || undefined,
     })
-    await router.replace('/')
+    // Preserve a pending invite (or any deep link) routed through signup.
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    await router.replace(redirect)
   } catch (error) {
     serverError.value = apiErrorMessage(error, 'Could not create your account.')
   }
@@ -120,7 +123,10 @@ const onSubmit = handleSubmit(async (values) => {
 
     <template #footer>
       Already have an account?
-      <RouterLink to="/login" class="font-medium text-primary hover:underline">
+      <RouterLink
+        :to="{ name: 'login', query: route.query.redirect ? { redirect: route.query.redirect } : {} }"
+        class="font-medium text-primary hover:underline"
+      >
         Sign in
       </RouterLink>
     </template>
