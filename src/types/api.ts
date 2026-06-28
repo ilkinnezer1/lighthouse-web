@@ -169,6 +169,8 @@ export interface Environment {
 export interface Project {
   id: string
   ownerId: string
+  // Org that currently owns the project; re-anchored by a transfer.
+  organizationId: string
   name: string
   slug: string
   subdomain: string

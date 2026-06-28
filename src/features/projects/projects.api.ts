@@ -33,6 +33,13 @@ export async function deleteProject(id: string) {
   await api.delete(`/projects/${id}`)
 }
 
+export async function transferProject(id: string, organizationId: string) {
+  const { data } = await api.post<Project>(`/projects/${id}/transfer`, {
+    organizationId,
+  })
+  return data
+}
+
 export async function listProjectBranches(id: string, base?: string, refresh?: boolean) {
   const { data } = await api.get<RepoBranchWithMeta[]>(
     `/projects/${id}/branches`,

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
   ArrowLeft,
+  ArrowRightLeft,
   ChevronRight,
   Copy,
   Eye,
@@ -16,6 +17,8 @@ import {
 import { toast } from 'vue-sonner'
 import { useDeleteProject, useProject } from './projects.queries'
 import ProjectSettingsDialog from './ProjectSettingsDialog.vue'
+import TransferProjectDialog from './TransferProjectDialog.vue'
+import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { useCan } from '@/features/orgs/useCan'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
@@ -37,14 +40,19 @@ import {
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
+const active = useActiveOrgStore()
 
 const { data: project, isPending, isError, error, refetch } = useProject(() => props.id)
 const deleteProject = useDeleteProject()
 const canEditProject = useCan('env.manage')
 const canDeleteProject = useCan('project.delete')
+// Gate transfer on the project's *current* org (Admin+ there), not the active
+// org — the user may be viewing it from a different scope.
+const canTransferProject = useCan('project.transfer', () => project.value?.organizationId)
 
 const showSecret = ref(false)
 const showSettings = ref(false)
+const showTransfer = ref(false)
 const webhookUrl = computed(() => `${window.location.origin}/webhooks/github`)
 
 const envBadge: Record<EnvironmentType, 'default' | 'secondary' | 'outline'> = {
@@ -70,6 +78,13 @@ async function onDelete() {
   } catch (err) {
     toast.error(apiErrorMessage(err, 'Could not delete project'))
   }
+}
+
+// Follow the project into its new org so it stays in view, then land on the
+// dashboard scoped there.
+async function onTransferred(organizationId: string) {
+  active.setActiveOrg(organizationId)
+  await router.push('/')
 }
 </script>
 
@@ -120,6 +135,15 @@ async function onDelete() {
           <Button v-if="canEditProject" variant="outline" size="sm" @click="showSettings = true">
             <Settings2 />
             Settings
+          </Button>
+          <Button
+            v-if="canTransferProject"
+            variant="outline"
+            size="sm"
+            @click="showTransfer = true"
+          >
+            <ArrowRightLeft />
+            Transfer
           </Button>
           <AlertDialog v-if="canDeleteProject">
           <AlertDialogTrigger as-child>
@@ -251,6 +275,11 @@ async function onDelete() {
       </section>
 
       <ProjectSettingsDialog v-model:open="showSettings" :project="project" />
+      <TransferProjectDialog
+        v-model:open="showTransfer"
+        :project="project"
+        @transferred="onTransferred"
+      />
     </template>
   </div>
 </template>

@@ -34,6 +34,7 @@ export type Capability =
   | 'env.manage'
   | 'exec'
   | 'project.delete'
+  | 'project.transfer'
   | 'members.manage'
   | 'audit.read'
   | 'org.update'
@@ -42,7 +43,12 @@ export type Capability =
 
 const READ: Capability[] = ['read']
 const WRITE: Capability[] = ['project.create', 'deploy', 'env.manage', 'exec']
-const ADMIN: Capability[] = ['project.delete', 'members.manage', 'audit.read']
+const ADMIN: Capability[] = [
+  'project.delete',
+  'project.transfer',
+  'members.manage',
+  'audit.read',
+]
 const OWNER: Capability[] = ['org.update', 'org.delete', 'org.transfer']
 
 const VIEWER_CAPS = READ

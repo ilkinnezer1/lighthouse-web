@@ -13,6 +13,7 @@ import {
   getProject,
   listProjectBranches,
   listProjects,
+  transferProject,
   updateProject,
 } from './projects.api'
 
@@ -107,5 +108,23 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: (id: string) => deleteProject(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.all }),
+  })
+}
+
+export function useTransferProject() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      organizationId,
+    }: {
+      projectId: string
+      organizationId: string
+    }) => transferProject(projectId, organizationId),
+    onSuccess: (_project, { projectId }) => {
+      qc.invalidateQueries({ queryKey: projectKeys.detail(projectId) })
+      // Refresh both the source and destination org project lists.
+      qc.invalidateQueries({ queryKey: projectKeys.all })
+    },
   })
 }
