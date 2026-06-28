@@ -37,7 +37,7 @@ const role = computed(() => org.value?.role)
 
 const canRename = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.update'))
 const canDelete = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.delete'))
-const canInvite = computed(() => roleCan(role.value, 'members.manage'))
+const canInvite = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'members.manage'))
 
 const name = ref('')
 watch(org, (o) => { if (o) name.value = o.name }, { immediate: true })
