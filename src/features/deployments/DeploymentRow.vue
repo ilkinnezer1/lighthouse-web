@@ -2,9 +2,10 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { GitBranch, GitMerge } from '@lucide/vue'
-import { statusDotClass, statusTone, titleCase } from './deployments.status'
+import { statusTone, titleCase } from './deployments.status'
 import { clockTime, relativeTime } from '@/lib/time'
 import { shortSha } from '@/lib/utils'
+import { SignalDot } from '@/components/ui/section'
 import type { DeploymentBranch, DeploymentStatus } from '@/types/api'
 
 const props = defineProps<{
@@ -30,38 +31,38 @@ const timeLabel = computed(() =>
   <RouterLink
     :to="to"
     :title="titleCase(status)"
-    class="group flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 transition-colors last:border-b-0 hover:bg-accent/40"
+    class="group flex items-baseline gap-3 py-3 transition-colors hover:bg-accent/40"
   >
-    <span class="size-2.5 shrink-0 rounded-full" :class="statusDotClass[statusTone[status]]" />
+    <SignalDot :tone="statusTone[status]" class="translate-y-[-1px]" />
 
     <span v-if="project" class="flex shrink-0 items-baseline gap-1">
-      <span class="truncate text-sm font-medium text-foreground">{{ project }}</span>
-      <span v-if="env" class="font-mono text-xs text-muted-foreground/70">/{{ env }}</span>
+      <span class="truncate text-sm text-ink-1">{{ project }}</span>
+      <span v-if="env" class="font-mono text-xs text-ink-4">/{{ env }}</span>
     </span>
 
-    <span v-if="commitSha" class="shrink-0 font-mono text-xs text-muted-foreground/70">
+    <span v-if="commitSha" class="shrink-0 font-mono text-xs text-ink-4">
       {{ shortSha(commitSha) }}
     </span>
 
-    <span class="min-w-0 flex-1 truncate text-sm text-foreground/90">
+    <span class="min-w-0 flex-1 truncate text-sm text-ink-2">
       {{ commitMessage ?? 'No commit message' }}
     </span>
 
     <span
       v-if="source"
-      class="hidden shrink-0 items-center gap-1 font-mono text-xs text-muted-foreground/80 md:inline-flex"
+      class="hidden shrink-0 items-center gap-1 font-mono text-xs text-ink-4 md:inline-flex"
     >
       <GitBranch class="size-3.5" />
       {{ source.name }}
     </span>
     <span
       v-if="mergeCount > 0"
-      class="hidden shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground md:inline-flex"
+      class="hidden shrink-0 items-center gap-0.5 font-mono text-[0.6875rem] text-ink-4 md:inline-flex"
     >
       <GitMerge class="size-3" />
       {{ mergeCount }}
     </span>
 
-    <span class="shrink-0 text-xs text-muted-foreground/60">{{ timeLabel }}</span>
+    <span class="shrink-0 font-mono text-xs text-ink-4">{{ timeLabel }}</span>
   </RouterLink>
 </template>

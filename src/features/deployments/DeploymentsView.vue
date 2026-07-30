@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Rocket, RotateCcw } from '@lucide/vue'
+import { RotateCcw } from '@lucide/vue'
 import { useDeploymentsFeed } from './deployments.queries'
 import { titleCase } from './deployments.status'
 import DeploymentRow from './DeploymentRow.vue'
@@ -10,7 +10,13 @@ import { dayLabel } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { DeploymentListItem, DeploymentStatus } from '@/types/api'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingRows,
+  PageHead,
+  PageShell,
+} from '@/components/ui/section'
 import {
   Select,
   SelectContent,
@@ -49,17 +55,15 @@ const statusOptions: DeploymentStatus[] = [
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl px-6 py-10 sm:px-10">
-    <header class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-foreground">Deployments</h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          Every deployment across your projects, newest first.
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+  <PageShell>
+    <PageHead
+      eyebrow="Workspace"
+      title="Deployments"
+      deck="Every deployment across your projects, newest first."
+    >
+      <template #actions>
         <Select v-model="projectFilter">
-          <SelectTrigger class="h-9 w-44">
+          <SelectTrigger class="h-8 w-40 text-xs" aria-label="Filter by project">
             <SelectValue placeholder="All projects" />
           </SelectTrigger>
           <SelectContent>
@@ -70,7 +74,7 @@ const statusOptions: DeploymentStatus[] = [
           </SelectContent>
         </Select>
         <Select v-model="statusFilter">
-          <SelectTrigger class="h-9 w-40">
+          <SelectTrigger class="h-8 w-36 text-xs" aria-label="Filter by status">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -80,85 +84,63 @@ const statusOptions: DeploymentStatus[] = [
             </SelectItem>
           </SelectContent>
         </Select>
-      </div>
-    </header>
+      </template>
+    </PageHead>
 
-    <div v-if="feed.isPending.value" class="mt-8 overflow-hidden rounded-xl border border-border">
-      <div
-        v-for="n in 8"
-        :key="n"
-        class="flex items-center gap-3 border-b border-border px-4 py-3 last:border-b-0"
-      >
-        <Skeleton class="size-2.5 rounded-full" />
-        <Skeleton class="h-4 w-40" />
-        <Skeleton class="h-3 flex-1" />
-        <Skeleton class="h-3 w-12" />
-      </div>
-    </div>
+    <div class="mt-12">
+      <LoadingRows v-if="feed.isPending.value" :rows="10" />
 
-    <div
-      v-else-if="feed.isError.value"
-      class="mt-8 flex flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 py-16 text-center"
-    >
-      <p class="text-sm text-destructive">{{ apiErrorMessage(feed.error.value) }}</p>
-      <Button variant="outline" size="sm" class="mt-4" @click="() => feed.refetch()">
-        <RotateCcw />
-        Retry
-      </Button>
-    </div>
+      <ErrorState
+        v-else-if="feed.isError.value"
+        :message="apiErrorMessage(feed.error.value, 'Could not load deployments.')"
+        :retrying="feed.isFetching.value"
+        @retry="() => feed.refetch()"
+      />
 
-    <div
-      v-else-if="items.length === 0"
-      class="mt-10 flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center"
-    >
-      <div class="flex size-12 items-center justify-center rounded-full bg-primary/10">
-        <Rocket class="size-6 text-primary" />
-      </div>
-      <h2 class="mt-4 text-base font-medium text-foreground">No deployments found</h2>
-      <p class="mt-1 max-w-sm text-sm text-muted-foreground">
-        Try a different filter, or deploy an environment to see it here.
-      </p>
-    </div>
+      <EmptyState
+        v-else-if="items.length === 0"
+        title="No deployments here"
+        deck="Try a different filter, or deploy an environment to see it land."
+      />
 
-    <div v-else class="mt-8">
-      <section v-for="group in groups" :key="group.label" class="mb-6 last:mb-0">
-        <div
-          class="sticky top-0 z-10 flex items-center gap-2 bg-background/80 py-1.5 backdrop-blur"
-        >
-          <h2 class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {{ group.label }}
-          </h2>
-          <span class="text-xs text-muted-foreground/60">{{ group.items.length }}</span>
+      <div v-else>
+        <section v-for="group in groups" :key="group.label" class="mb-10 last:mb-0">
+          <div
+            class="sticky top-0 z-10 flex items-baseline gap-2.5 border-b border-rule bg-background/90 pb-2 backdrop-blur"
+          >
+            <h2 class="eyebrow">{{ group.label }}</h2>
+            <span class="font-mono text-xs text-ink-4">{{ group.items.length }}</span>
+          </div>
+
+          <div class="rule-y">
+            <DeploymentRow
+              v-for="d in group.items"
+              :key="d.id"
+              :to="`/deployments/${d.id}`"
+              :status="d.status"
+              :commit-sha="d.commitSha"
+              :commit-message="d.commitMessage"
+              :created-at="d.createdAt"
+              :branches="d.branches"
+              :project="d.environment.project.name"
+              :env="d.environment.name"
+              time="clock"
+            />
+          </div>
+        </section>
+
+        <div v-if="feed.hasNextPage.value" class="mt-8 flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            :disabled="feed.isFetchingNextPage.value"
+            @click="() => feed.fetchNextPage()"
+          >
+            <RotateCcw v-if="feed.isFetchingNextPage.value" class="animate-spin" />
+            {{ feed.isFetchingNextPage.value ? 'Loading…' : 'Load more' }}
+          </Button>
         </div>
-
-        <div class="overflow-hidden rounded-xl border border-border">
-          <DeploymentRow
-            v-for="d in group.items"
-            :key="d.id"
-            :to="`/deployments/${d.id}`"
-            :status="d.status"
-            :commit-sha="d.commitSha"
-            :commit-message="d.commitMessage"
-            :created-at="d.createdAt"
-            :branches="d.branches"
-            :project="d.environment.project.name"
-            :env="d.environment.name"
-            time="clock"
-          />
-        </div>
-      </section>
-
-      <div v-if="feed.hasNextPage.value" class="mt-2 flex justify-center">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="feed.isFetchingNextPage.value"
-          @click="() => feed.fetchNextPage()"
-        >
-          <RotateCcw v-if="feed.isFetchingNextPage.value" class="animate-spin" />
-          {{ feed.isFetchingNextPage.value ? 'Loading…' : 'Load more' }}
-        </Button>
       </div>
     </div>
-  </div>
+  </PageShell>
 </template>

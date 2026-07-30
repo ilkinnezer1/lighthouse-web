@@ -72,8 +72,7 @@ onKeyStroke('Escape', () => {
     >
       <div
         v-if="open"
-        class="fixed inset-x-0 bottom-0 z-50 flex h-[60vh] flex-col overflow-hidden rounded-t-2xl border-t border-border shadow-2xl"
-        style="background: #0a0d14"
+        class="log-pane fixed inset-x-0 bottom-0 z-50 flex h-[60vh] flex-col overflow-hidden rounded-t-2xl border-0 border-t shadow-2xl"
         role="dialog"
         aria-label="Service terminal"
       >
@@ -82,10 +81,10 @@ onKeyStroke('Escape', () => {
         >
           <div class="flex min-w-0 items-center gap-2">
             <SquareTerminal class="size-4 shrink-0 text-primary" />
-            <span class="truncate font-mono text-sm text-foreground/90">
+            <span class="truncate font-mono text-sm">
               {{ service ?? 'terminal' }}
             </span>
-            <span class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span class="log-dim inline-flex items-center gap-1.5 text-xs">
               <span class="size-1.5 rounded-full" :class="statusDot" />
               {{ statusLabel }}
             </span>
@@ -95,7 +94,7 @@ onKeyStroke('Escape', () => {
               v-if="status === 'closed' || status === 'error'"
               variant="ghost"
               size="sm"
-              class="text-muted-foreground hover:text-foreground"
+              class="log-dim hover:text-white"
               @click="retry"
             >
               <RotateCw />
@@ -104,7 +103,7 @@ onKeyStroke('Escape', () => {
             <Button
               variant="ghost"
               size="icon-sm"
-              class="text-muted-foreground hover:text-foreground"
+              class="log-dim hover:text-white"
               title="Close"
               @click="open = false"
             >
@@ -117,7 +116,7 @@ onKeyStroke('Escape', () => {
           <div ref="containerEl" class="absolute inset-0 px-3 py-2" />
           <div
             v-if="status === 'connecting'"
-            class="pointer-events-none absolute inset-0 flex items-center justify-center gap-2 text-sm text-muted-foreground"
+            class="log-dim pointer-events-none absolute inset-0 flex items-center justify-center gap-2 text-sm"
           >
             <LoaderCircle class="size-4 animate-spin" />
             Attaching to {{ service }}…

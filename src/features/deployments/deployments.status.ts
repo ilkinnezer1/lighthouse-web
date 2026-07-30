@@ -32,17 +32,19 @@ export const stageTone: Record<DeploymentStageStatus, StatusTone> = {
 }
 
 export const statusDotClass: Record<StatusTone, string> = {
-  queued: 'bg-muted-foreground/40',
-  active: 'bg-primary animate-pulse',
-  success: 'bg-success',
-  error: 'bg-destructive',
-  neutral: 'bg-muted-foreground/40',
+  queued: 'bg-signal-idle',
+  active: 'bg-signal-progress animate-pulse',
+  success: 'bg-signal-live',
+  error: 'bg-signal-error',
+  neutral: 'bg-signal-idle',
 }
 
+// Terminal success stays ink, not green — a list of ten "Succeeded" rows in
+// colour is noise. Only the states you'd act on carry a hue.
 export const statusTextClass: Record<StatusTone, string> = {
-  queued: 'text-muted-foreground',
-  active: 'text-primary',
-  success: 'text-success',
-  error: 'text-destructive',
-  neutral: 'text-muted-foreground',
+  queued: 'text-ink-4',
+  active: 'text-signal-progress',
+  success: 'text-ink-3',
+  error: 'text-signal-error',
+  neutral: 'text-ink-4',
 }

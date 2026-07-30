@@ -5,7 +5,10 @@ import './style.css'
 import App from './App.vue'
 import router from './router'
 import { setUnauthorizedHandler } from '@/lib/api'
+import { initTheme } from '@/lib/theme'
 import { useAuthStore } from '@/features/auth/auth.store'
+
+initTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {
