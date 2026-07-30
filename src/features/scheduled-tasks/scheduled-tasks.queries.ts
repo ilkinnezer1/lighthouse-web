@@ -4,8 +4,10 @@ import type {
   CreateScheduledTaskInput,
   UpdateScheduledTaskInput,
 } from '@/types/api'
+import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import {
   createScheduledTask,
+  listAllScheduledTasks,
   deleteScheduledTask,
   listScheduledTasks,
   listTaskRuns,
@@ -17,6 +19,28 @@ export const taskKeys = {
   all: ['scheduled-tasks'] as const,
   byEnv: (envId: string) => ['scheduled-tasks', 'env', envId] as const,
   runs: (id: string) => ['scheduled-tasks', id, 'runs'] as const,
+}
+
+export function useAllScheduledTasks(filters: {
+  projectId?: MaybeRefOrGetter<string | undefined>
+  enabled?: MaybeRefOrGetter<boolean | undefined>
+}) {
+  const active = useActiveOrgStore()
+  return useQuery({
+    queryKey: computed(() => [
+      ...taskKeys.all,
+      'all',
+      active.activeOrgId,
+      toValue(filters.projectId) ?? null,
+      toValue(filters.enabled) ?? null,
+    ]),
+    queryFn: () =>
+      listAllScheduledTasks({
+        orgId: active.activeOrgId ?? undefined,
+        projectId: toValue(filters.projectId),
+        enabled: toValue(filters.enabled),
+      }),
+  })
 }
 
 export function useScheduledTasks(envId: MaybeRefOrGetter<string>) {

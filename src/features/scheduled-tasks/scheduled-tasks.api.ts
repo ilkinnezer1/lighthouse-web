@@ -1,6 +1,8 @@
 import { api } from '@/lib/api'
 import type {
   CreateScheduledTaskInput,
+  ListScheduledTasksParams,
+  ScheduledTaskListItem,
   ScheduledTask,
   TaskRun,
   TaskRunOutcome,
@@ -44,5 +46,12 @@ export async function listTaskRuns(id: string) {
 
 export async function runScheduledTask(id: string) {
   const { data } = await api.post<TaskRunOutcome>(`/scheduled-tasks/${id}/run`)
+  return data
+}
+
+export async function listAllScheduledTasks(params?: ListScheduledTasksParams) {
+  const { data } = await api.get<ScheduledTaskListItem[]>('/scheduled-tasks', {
+    params,
+  })
   return data
 }

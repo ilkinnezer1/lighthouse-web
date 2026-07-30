@@ -42,6 +42,11 @@ const routes: RouteRecordRaw[] = [
         props: true,
       },
       {
+        path: 'scheduled-tasks',
+        name: 'scheduled-tasks',
+        component: () => import('@/features/scheduled-tasks/ScheduledTasksView.vue'),
+      },
+      {
         path: 'databases',
         name: 'databases',
         component: () => import('@/features/databases/DatabasesView.vue'),

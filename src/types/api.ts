@@ -599,3 +599,17 @@ export interface TaskRunOutcome {
   status: 'SUCCEEDED' | 'FAILED' | 'SKIPPED'
   exitCode: number | null
 }
+
+export interface ScheduledTaskListItem extends ScheduledTask {
+  environment: {
+    id: string
+    name: string
+    project: { id: string; name: string }
+  }
+}
+
+export interface ListScheduledTasksParams {
+  projectId?: string
+  enabled?: boolean
+  orgId?: string
+}
