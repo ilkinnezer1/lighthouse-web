@@ -1,19 +1,29 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {useRouter} from 'vue-router'
-import {FolderGit2, GitBranch, Plus, RotateCcw} from '@lucide/vue'
+import {ExternalLink, Plus} from '@lucide/vue'
 import {useProjects} from './projects.queries'
+import {useProjectStatuses} from './project-status'
 import CreateProjectDialog from './CreateProjectDialog.vue'
 import {useCan} from '@/features/orgs/useCan'
+import {statusTone, titleCase} from '@/features/deployments/deployments.status'
 import {relativeTime} from '@/lib/time'
 import {apiErrorMessage} from '@/lib/api'
 import type {Project} from '@/types/api'
 import {Button} from '@/components/ui/button'
-import {Badge} from '@/components/ui/badge'
-import {Skeleton} from '@/components/ui/skeleton'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingRows,
+  PageHead,
+  PageShell,
+  SectionHead,
+  SignalDot,
+} from '@/components/ui/section'
 
 const router = useRouter()
 const {data: projects, isPending, isError, error, refetch} = useProjects()
+const {byProject} = useProjectStatuses()
 const canCreate = useCan('project.create')
 const dialogOpen = ref(false)
 
@@ -30,87 +40,109 @@ function goToProject(id: string) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl px-6 py-10 sm:px-10">
-    <header class="flex items-end justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-foreground">Projects</h1>
-        <p class="mt-1 text-sm text-muted-foreground">Connect a Git repo and deploy it.</p>
+  <PageShell>
+    <PageHead eyebrow="Workspace" title="Projects" deck="Connect a Git repo and deploy it.">
+      <template #actions>
+        <Button v-if="canCreate" @click="dialogOpen = true">
+          <Plus/>
+          New project
+        </Button>
+      </template>
+    </PageHead>
+
+    <div class="mt-12">
+      <!-- loading -->
+      <div v-if="isPending">
+        <SectionHead eyebrow="All projects"/>
+        <LoadingRows :rows="4"/>
       </div>
-      <Button v-if="canCreate" @click="dialogOpen = true">
-        <Plus/>
-        New project
-      </Button>
-    </header>
 
-    <!-- loading -->
-    <div v-if="isPending" class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <div v-for="n in 3" :key="n" class="rounded-xl border border-border p-5">
-        <Skeleton class="h-5 w-32"/>
-        <Skeleton class="mt-3 h-4 w-44"/>
-        <Skeleton class="mt-6 h-5 w-20"/>
-      </div>
-    </div>
+      <!-- error -->
+      <ErrorState
+          v-else-if="isError"
+          :message="apiErrorMessage(error, 'Could not load projects.')"
+          @retry="() => refetch()"
+      />
 
-    <!-- error -->
-    <div
-        v-else-if="isError"
-        class="mt-8 flex flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 py-16 text-center"
-    >
-      <p class="text-sm text-destructive">{{ apiErrorMessage(error) }}</p>
-      <Button variant="outline" size="sm" class="mt-4" @click="() => refetch()">
-        <RotateCcw/>
-        Retry
-      </Button>
-    </div>
-
-    <!-- empty -->
-    <div
-        v-else-if="!projects || projects.length === 0"
-        class="mt-10 flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center"
-    >
-      <div class="flex size-12 items-center justify-center rounded-full bg-primary/10">
-        <FolderGit2 class="size-6 text-primary"/>
-      </div>
-      <h2 class="mt-4 text-base font-medium text-foreground">No projects yet</h2>
-      <p class="mt-1 max-w-sm text-sm text-muted-foreground">
-        Connect a public Git repository to deploy it with Lighthouse.
-      </p>
-      <Button v-if="canCreate" class="mt-5" @click="dialogOpen = true">
-        <Plus/>
-        New project
-      </Button>
-    </div>
-
-    <!-- list -->
-    <div v-else class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <button
-          v-for="project in projects"
-          :key="project.id"
-          type="button"
-          class="group flex flex-col rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:border-primary focus-visible:outline-none"
-          @click="goToProject(project.id)"
+      <!-- empty -->
+      <EmptyState
+          v-else-if="!projects || projects.length === 0"
+          title="Nothing connected yet"
+          deck="Point Lighthouse at a Git repository and it will build and serve it."
       >
-        <div class="flex items-start justify-between gap-3">
-          <h3 class="truncate font-medium text-foreground">{{ project.name }}</h3>
-          <Badge variant="secondary" class="font-mono">{{ project.subdomain }}</Badge>
+        <template #action>
+          <Button v-if="canCreate" @click="dialogOpen = true">
+            <Plus/>
+            New project
+          </Button>
+        </template>
+      </EmptyState>
+
+      <!-- list -->
+      <div v-else>
+        <SectionHead eyebrow="All projects" :count="projects.length"/>
+        <div class="rule-y">
+          <div
+              v-for="project in projects"
+              :key="project.id"
+              class="group relative flex items-center gap-4 transition-colors hover:bg-accent/40 focus-within:bg-accent/40"
+          >
+            <button
+                type="button"
+                class="flex min-w-0 flex-1 items-center gap-4 py-4 text-left focus-visible:outline-none"
+                @click="goToProject(project.id)"
+            >
+              <SignalDot
+                  v-if="byProject.get(project.id)"
+                  :tone="statusTone[byProject.get(project.id)!.status]"
+                  :title="titleCase(byProject.get(project.id)!.status)"
+              />
+              <span v-else class="size-2 shrink-0 rounded-full border border-rule" title="Never deployed"/>
+
+              <span class="min-w-0 shrink-0 basis-56">
+                <span class="block truncate text-[0.9375rem] text-ink-1">{{ project.name }}</span>
+                <span class="mt-0.5 block truncate font-mono text-xs text-ink-4">
+                  {{ repoLabel(project) }}
+                </span>
+              </span>
+
+              <span class="min-w-0 flex-1 truncate text-xs text-ink-3">
+                <template v-if="byProject.get(project.id)">
+                  {{ byProject.get(project.id)!.commitMessage ?? 'No commit message' }}
+                </template>
+                <span v-else class="text-ink-4">Never deployed</span>
+              </span>
+
+              <span class="hidden shrink-0 basis-28 text-right text-xs text-ink-4 sm:block">
+                <template v-if="byProject.get(project.id)">
+                  {{ relativeTime(byProject.get(project.id)!.createdAt) }}
+                </template>
+                <template v-else>—</template>
+              </span>
+            </button>
+
+            <!-- The live URL is the thing you actually want off this row; keep it
+                 a real link so middle-click and copy-link behave. -->
+            <a
+                v-if="byProject.get(project.id)?.url"
+                :href="byProject.get(project.id)!.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="shrink-0 rounded-md p-2 text-ink-4 opacity-0 transition hover:bg-accent hover:text-ink-1 focus-visible:opacity-100 group-hover:opacity-100"
+                :title="`Open ${byProject.get(project.id)!.url}`"
+                @click.stop
+            >
+              <ExternalLink class="size-4"/>
+            </a>
+            <span v-else class="size-8 shrink-0"/>
+          </div>
         </div>
-        <p class="mt-1 truncate font-mono text-xs text-muted-foreground">
-          {{ repoLabel(project) }}
-        </p>
-        <div class="mt-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <span class="inline-flex items-center gap-1">
-            <GitBranch class="size-3.5"/>
-            {{ project.defaultBranch }}
-          </span>
-          <span aria-hidden>·</span>
-          <span>{{ relativeTime(project.createdAt) }}</span>
-        </div>
-      </button>
+      </div>
     </div>
 
     <CreateProjectDialog
         v-model:open="dialogOpen"
         @created="(p) => goToProject(p.id)"
     />
-  </div>
+  </PageShell>
 </template>
