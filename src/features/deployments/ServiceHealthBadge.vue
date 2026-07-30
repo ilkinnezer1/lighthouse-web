@@ -71,9 +71,10 @@ const webOffline = computed(() => props.isWeb && resolved.value.tone === 'down')
   <span
     v-if="webOffline"
     class="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-destructive"
+    title="The container is stopped — start it to bring the site back"
   >
     <TriangleAlert class="size-3" />
-    Site offline
+    Not running
   </span>
   <span
     v-else

@@ -32,6 +32,23 @@ export function dayLabel(iso: string): string {
   return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+/**
+ * "How long did it take" — the number you scan a build list for.
+ * Returns null while a deployment is still running (no finish time yet).
+ */
+export function durationLabel(start: string | null, end: string | null): string | null {
+  if (!start || !end) return null
+  const ms = Date.parse(end) - Date.parse(start)
+  if (!Number.isFinite(ms) || ms < 0) return null
+  const secs = Math.round(ms / 1000)
+  if (secs < 60) return `${secs}s`
+  const mins = Math.floor(secs / 60)
+  const rem = secs % 60
+  if (mins < 60) return rem ? `${mins}m ${rem}s` : `${mins}m`
+  const hrs = Math.floor(mins / 60)
+  return `${hrs}h ${mins % 60}m`
+}
+
 export function clockTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en', {
     hour: '2-digit',

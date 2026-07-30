@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ArrowLeft, ChevronRight, Database, Plus, Rocket, RotateCcw } from '@lucide/vue'
+import { ChevronRight, Plus, Rocket } from '@lucide/vue'
 import { useProject } from '@/features/projects/projects.queries'
 import { useDeployments } from './deployments.queries'
 import DeploymentRow from './DeploymentRow.vue'
@@ -17,8 +17,15 @@ import { useCan } from '@/features/orgs/useCan'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Breadcrumb,
+  EmptyState,
+  ErrorState,
+  LoadingRows,
+  PageHead,
+  PageShell,
+  SectionHead,
+} from '@/components/ui/section'
 
 const props = defineProps<{ projectId: string; envId: string }>()
 const router = useRouter()
@@ -26,7 +33,12 @@ const router = useRouter()
 const { data: project } = useProject(() => props.projectId)
 const env = computed(() => project.value?.environments?.find((e) => e.id === props.envId))
 
-const { data: databases, isPending: dbPending, isError: dbError } = useDatabases(() => props.envId)
+const {
+  data: databases,
+  isPending: dbPending,
+  isError: dbError,
+  refetch: refetchDbs,
+} = useDatabases(() => props.envId)
 const showCreateDb = ref(false)
 function onDbCreated(db: ManagedDatabase) {
   router.push(`/projects/${props.projectId}/env/${props.envId}/databases/${db.id}`)
@@ -50,77 +62,53 @@ const canManageEnv = useCan('env.manage')
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-6 py-10 sm:px-10">
-    <RouterLink
-      :to="`/projects/${projectId}`"
-      class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-    >
-      <ArrowLeft class="size-4" />
-      Project
-    </RouterLink>
+  <PageShell>
+    <Breadcrumb
+      :items="[
+        { label: 'Projects', to: '/' },
+        { label: project?.name ?? 'Project', to: `/projects/${projectId}` },
+        { label: env?.name ?? 'environment', mono: true },
+      ]"
+    />
 
-    <header class="mt-4 flex items-start justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <h1 class="text-2xl font-semibold tracking-tight text-foreground">
-          {{ env?.name ?? 'Environment' }}
-        </h1>
-        <Badge v-if="env" variant="secondary" class="font-mono">{{ env.branch ?? '—' }}</Badge>
-      </div>
-      <Button v-if="canDeploy" @click="showDeploy = true">
-        <Rocket />
-        Deploy
-      </Button>
-    </header>
-    <p class="mt-1 text-sm text-muted-foreground">
-      Deploys the latest commit on
-      <span class="font-mono">{{ env?.branch ?? 'the branch' }}</span>.
-    </p>
-
-    <section class="mt-8">
-      <h2 class="text-sm font-semibold tracking-tight text-foreground">
-        Deployments
-        <span v-if="deployments?.length" class="ml-1 text-muted-foreground/60">
-          {{ deployments.length }}
-        </span>
-      </h2>
-
-      <!-- loading -->
-      <div v-if="isPending" class="mt-3 overflow-hidden rounded-xl border border-border">
-        <div
-          v-for="n in 4"
-          :key="n"
-          class="flex items-center gap-3 border-b border-border px-4 py-3 last:border-b-0"
-        >
-          <Skeleton class="size-2.5 rounded-full" />
-          <Skeleton class="h-3 w-14" />
-          <Skeleton class="h-3 flex-1" />
-          <Skeleton class="h-3 w-12" />
-        </div>
-      </div>
-
-      <!-- error -->
-      <div
-        v-else-if="isError"
-        class="mt-3 flex flex-col items-center rounded-xl border border-destructive/30 bg-destructive/5 py-12 text-center"
-      >
-        <p class="text-sm text-destructive">{{ apiErrorMessage(error) }}</p>
-        <Button variant="outline" size="sm" class="mt-4" @click="() => refetch()">
-          <RotateCcw />
-          Retry
+    <PageHead eyebrow="Environment" :title="env?.name ?? 'Environment'" class="mt-5">
+      <template #deck>
+        Deploys the latest commit on
+        <span class="font-mono text-ink-2">{{ env?.branch ?? 'the branch' }}</span>.
+      </template>
+      <template #actions>
+        <Button v-if="canDeploy" size="sm" @click="showDeploy = true">
+          <Rocket />
+          Deploy
         </Button>
-      </div>
+      </template>
+    </PageHead>
 
-      <!-- empty -->
-      <div
+    <section class="mt-12">
+      <SectionHead eyebrow="Deployments" :count="deployments?.length ?? 0" />
+
+      <LoadingRows v-if="isPending" :rows="4" />
+
+      <ErrorState
+        v-else-if="isError"
+        :message="apiErrorMessage(error, 'Could not load deployments.')"
+        @retry="() => refetch()"
+      />
+
+      <EmptyState
         v-else-if="!deployments || deployments.length === 0"
-        class="mt-3 rounded-xl border border-dashed border-border py-16 text-center"
+        title="Nothing deployed yet"
+        deck="Ship the latest commit on this branch to see it here."
       >
-        <h3 class="text-base font-medium text-foreground">No deployments yet</h3>
-        <p class="mt-1 text-sm text-muted-foreground">Hit Deploy to ship the latest commit.</p>
-      </div>
+        <template #action>
+          <Button v-if="canDeploy" size="sm" @click="showDeploy = true">
+            <Rocket />
+            Deploy
+          </Button>
+        </template>
+      </EmptyState>
 
-      <!-- list -->
-      <div v-else class="mt-3 overflow-hidden rounded-xl border border-border">
+      <div v-else class="rule-y">
         <DeploymentRow
           v-for="d in deployments"
           :key="d.id"
@@ -143,58 +131,64 @@ const canManageEnv = useCan('env.manage')
 
     <!-- databases -->
     <section class="mt-10">
-      <div class="flex items-center justify-between gap-4">
-        <h2 class="text-sm font-semibold tracking-tight text-foreground">Databases</h2>
-        <Button
-          v-if="canManageEnv"
-          size="sm"
-          variant="outline"
-          :disabled="!project"
-          @click="showCreateDb = true"
-        >
-          <Plus />
-          Add database
-        </Button>
-      </div>
+      <SectionHead eyebrow="Databases" :count="databases?.length ?? 0">
+        <template #actions>
+          <Button
+            v-if="canManageEnv"
+            size="sm"
+            variant="outline"
+            :disabled="!project"
+            @click="showCreateDb = true"
+          >
+            <Plus />
+            Add database
+          </Button>
+        </template>
+      </SectionHead>
 
-      <!-- loading -->
-      <div v-if="dbPending" class="mt-3 space-y-2">
-        <Skeleton v-for="n in 2" :key="n" class="h-14 w-full rounded-lg" />
-      </div>
+      <LoadingRows v-if="dbPending" :rows="2" />
 
-      <p v-else-if="dbError" class="mt-3 text-sm text-destructive">Could not load databases.</p>
+      <ErrorState
+        v-else-if="dbError"
+        message="Could not load databases."
+        @retry="() => refetchDbs()"
+      />
 
-      <!-- empty -->
-      <div
+      <EmptyState
         v-else-if="!databases || databases.length === 0"
-        class="mt-3 rounded-xl border border-dashed border-border py-12 text-center"
+        title="No databases"
+        deck="Add one to give this environment persistence."
       >
-        <Database class="mx-auto size-5 text-muted-foreground" />
-        <p class="mt-2 text-sm text-muted-foreground">
-          No databases. Add one to give this environment persistence.
-        </p>
-      </div>
+        <template #action>
+          <Button
+            v-if="canManageEnv"
+            size="sm"
+            variant="outline"
+            :disabled="!project"
+            @click="showCreateDb = true"
+          >
+            <Plus />
+            Add database
+          </Button>
+        </template>
+      </EmptyState>
 
-      <!-- list -->
-      <div
-        v-else
-        class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border"
-      >
+      <div v-else class="rule-y">
         <RouterLink
           v-for="db in databases"
           :key="db.id"
           :to="`/projects/${projectId}/env/${envId}/databases/${db.id}`"
-          class="flex items-center gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/40"
+          class="flex items-center gap-3 py-3 transition-colors hover:bg-accent/40"
         >
           <StatusBadge :tone="databaseTone[db.status]" :label="titleCase(db.status)" />
           <div class="min-w-0 flex-1">
-            <p class="truncate font-mono text-sm text-foreground">{{ db.name }}</p>
-            <p class="mt-0.5 truncate text-xs text-muted-foreground">
+            <p class="truncate font-mono text-sm text-ink-1">{{ db.name }}</p>
+            <p class="mt-0.5 truncate text-xs text-ink-4">
               {{ db.type }} {{ db.version }}
               <span v-if="!db.ownsContainer"> · attached</span>
             </p>
           </div>
-          <ChevronRight class="size-4 text-muted-foreground" />
+          <ChevronRight class="size-4 text-ink-4" />
         </RouterLink>
       </div>
     </section>
@@ -214,5 +208,5 @@ const canManageEnv = useCan('env.manage')
       :default-branch="env?.branch ?? null"
       @deployed="onDeployed"
     />
-  </div>
+  </PageShell>
 </template>
