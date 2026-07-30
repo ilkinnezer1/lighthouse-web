@@ -3,87 +3,139 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Full HSL color values so Tailwind v4 opacity modifiers (bg-primary/50) work. */
+/*
+ * Two grounds, one grammar.
+ *
+ * Surfaces carry NO hue — the accent is the only colour in the interface, so a
+ * single amber does all the signalling work against a neutral ramp.
+ *
+ * Elevation comes from tone, never from a drop shadow:
+ *   sunken < background < well  (light: the well is the brightest surface)
+ *   background < well < raised  (dark: the well lifts off the ground)
+ * and separation comes from `--rule`, a hairline, not a card border.
+ *
+ * `--ink-1..4` is the text ramp. Hierarchy is expressed by TONE first and size
+ * second, which is what keeps a dense console from turning into a size contest.
+ *
+ * Full hsl() values so Tailwind v4 opacity modifiers (bg-primary/50) work.
+ */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  /* light — warm paper */
-  --background: hsl(40 33% 99%);
-  --foreground: hsl(222 30% 11%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(222 30% 11%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(222 30% 11%);
-  --primary: hsl(33 92% 45%);
-  --primary-foreground: hsl(40 60% 99%);
-  --secondary: hsl(220 16% 95%);
-  --secondary-foreground: hsl(222 25% 18%);
-  --muted: hsl(220 16% 95%);
-  --muted-foreground: hsl(220 9% 42%);
-  --accent: hsl(220 16% 93%);
-  --accent-foreground: hsl(222 25% 18%);
-  --destructive: hsl(0 72% 47%);
+  /* ── light ──────────────────────────────────────────────────────── */
+  --background: hsl(0 0% 98%);
+  --foreground: hsl(0 0% 9%);
+
+  --well: hsl(0 0% 100%);
+  --sunken: hsl(0 0% 95.5%);
+  --raised: hsl(0 0% 100%);
+  --rule: hsl(0 0% 90%);
+
+  --ink-1: hsl(0 0% 9%);
+  --ink-2: hsl(0 0% 32%);
+  --ink-3: hsl(0 0% 45%);
+  --ink-4: hsl(0 0% 64%);
+
+  --card: var(--well);
+  --card-foreground: var(--ink-1);
+  --popover: var(--well);
+  --popover-foreground: var(--ink-1);
+
+  /* Amber stays bright in both modes and carries dark text — darkening it for
+     contrast on white is what turned it to rust. */
+  --primary: hsl(36 92% 50%);
+  --primary-foreground: hsl(30 45% 10%);
+  --secondary: hsl(0 0% 95%);
+  --secondary-foreground: hsl(0 0% 22%);
+  --muted: hsl(0 0% 95%);
+  --muted-foreground: var(--ink-3);
+  --accent: hsl(0 0% 94%);
+  --accent-foreground: hsl(0 0% 18%);
+  --destructive: hsl(2 68% 46%);
   --destructive-foreground: hsl(0 0% 100%);
-  --success: hsl(150 58% 38%);
+  --success: hsl(150 55% 30%);
   --success-foreground: hsl(0 0% 100%);
-  --border: hsl(220 14% 90%);
-  --input: hsl(220 14% 88%);
-  --ring: hsl(33 92% 45%);
+  --border: var(--rule);
+  --input: hsl(0 0% 87%);
+  --ring: hsl(36 92% 45%);
 
-  --chart-1: hsl(33 92% 50%);
-  --chart-2: hsl(195 70% 45%);
-  --chart-3: hsl(150 55% 42%);
-  --chart-4: hsl(258 60% 60%);
-  --chart-5: hsl(0 70% 55%);
+  /* Legible without going neon — a dot you read, not a badge that shouts. */
+  --signal-live: hsl(150 58% 32%);
+  --signal-progress: hsl(36 88% 42%);
+  --signal-idle: hsl(0 0% 62%);
+  --signal-error: hsl(2 70% 48%);
 
-  --sidebar: hsl(40 25% 98%);
-  --sidebar-foreground: hsl(222 25% 18%);
-  --sidebar-primary: hsl(33 92% 45%);
-  --sidebar-primary-foreground: hsl(40 60% 99%);
-  --sidebar-accent: hsl(220 16% 93%);
-  --sidebar-accent-foreground: hsl(222 25% 18%);
-  --sidebar-border: hsl(220 14% 90%);
-  --sidebar-ring: hsl(33 92% 45%);
+  --chart-1: hsl(36 92% 48%);
+  --chart-2: hsl(205 65% 45%);
+  --chart-3: hsl(150 52% 34%);
+  --chart-4: hsl(265 45% 55%);
+  --chart-5: hsl(2 68% 52%);
+
+  --sidebar: hsl(0 0% 96.5%);
+  --sidebar-foreground: var(--ink-2);
+  --sidebar-primary: hsl(36 92% 50%);
+  --sidebar-primary-foreground: hsl(30 45% 10%);
+  --sidebar-accent: hsl(0 0% 93%);
+  --sidebar-accent-foreground: hsl(0 0% 18%);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: hsl(36 92% 45%);
 }
 
 .dark {
-  /* dark — night-sea ink + amber beacon (primary experience) */
-  --background: hsl(222 28% 7%);
-  --foreground: hsl(210 16% 90%);
-  --card: hsl(222 24% 9%);
-  --card-foreground: hsl(210 16% 90%);
-  --popover: hsl(222 26% 8%);
-  --popover-foreground: hsl(210 16% 90%);
-  --primary: hsl(38 92% 55%);
+  /* ── dark ───────────────────────────────────────────────────────── */
+  --background: hsl(0 0% 7%);
+  --foreground: hsl(0 0% 93%);
+
+  --well: hsl(0 0% 10%);
+  --sunken: hsl(0 0% 4.5%);
+  --raised: hsl(0 0% 13%);
+  --rule: hsl(0 0% 17%);
+
+  --ink-1: hsl(0 0% 93%);
+  --ink-2: hsl(0 0% 75%);
+  --ink-3: hsl(0 0% 56%);
+  --ink-4: hsl(0 0% 41%);
+
+  --card: var(--well);
+  --card-foreground: var(--ink-1);
+  --popover: var(--raised);
+  --popover-foreground: var(--ink-1);
+
+  --primary: hsl(38 92% 58%);
   --primary-foreground: hsl(30 45% 8%);
-  --secondary: hsl(220 16% 15%);
-  --secondary-foreground: hsl(210 16% 90%);
-  --muted: hsl(220 16% 13%);
-  --muted-foreground: hsl(215 14% 60%);
-  --accent: hsl(220 16% 16%);
-  --accent-foreground: hsl(210 16% 92%);
-  --destructive: hsl(0 70% 55%);
+  --secondary: hsl(0 0% 16%);
+  --secondary-foreground: var(--ink-1);
+  --muted: hsl(0 0% 14%);
+  --muted-foreground: var(--ink-3);
+  --accent: hsl(0 0% 17%);
+  --accent-foreground: var(--ink-1);
+  --destructive: hsl(2 72% 60%);
   --destructive-foreground: hsl(0 0% 98%);
-  --success: hsl(150 60% 48%);
+  --success: hsl(150 52% 52%);
   --success-foreground: hsl(150 40% 8%);
-  --border: hsl(218 16% 16%);
-  --input: hsl(218 16% 18%);
-  --ring: hsl(38 92% 55%);
+  --border: var(--rule);
+  --input: hsl(0 0% 20%);
+  --ring: hsl(38 92% 58%);
 
-  --chart-1: hsl(38 92% 55%);
-  --chart-2: hsl(195 75% 55%);
-  --chart-3: hsl(150 60% 50%);
-  --chart-4: hsl(258 70% 68%);
-  --chart-5: hsl(0 70% 60%);
+  --signal-live: hsl(150 52% 50%);
+  --signal-progress: hsl(38 88% 58%);
+  --signal-idle: hsl(0 0% 40%);
+  --signal-error: hsl(2 76% 63%);
 
-  --sidebar: hsl(222 26% 8%);
-  --sidebar-foreground: hsl(210 14% 80%);
-  --sidebar-primary: hsl(38 92% 55%);
+  --chart-1: hsl(38 92% 58%);
+  --chart-2: hsl(205 70% 60%);
+  --chart-3: hsl(150 52% 52%);
+  --chart-4: hsl(265 55% 70%);
+  --chart-5: hsl(2 76% 63%);
+
+  --sidebar: hsl(0 0% 5.5%);
+  --sidebar-foreground: var(--ink-2);
+  --sidebar-primary: hsl(38 92% 58%);
   --sidebar-primary-foreground: hsl(30 45% 8%);
-  --sidebar-accent: hsl(220 16% 14%);
-  --sidebar-accent-foreground: hsl(210 16% 92%);
-  --sidebar-border: hsl(218 16% 14%);
-  --sidebar-ring: hsl(38 92% 55%);
+  --sidebar-accent: hsl(0 0% 14%);
+  --sidebar-accent-foreground: var(--ink-1);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: hsl(38 92% 58%);
 }
 
 @theme inline {
@@ -109,6 +161,21 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-well: var(--well);
+  --color-sunken: var(--sunken);
+  --color-raised: var(--raised);
+  --color-rule: var(--rule);
+
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+
+  --color-signal-live: var(--signal-live);
+  --color-signal-progress: var(--signal-progress);
+  --color-signal-idle: var(--signal-idle);
+  --color-signal-error: var(--signal-error);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -127,7 +194,7 @@
   --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 3px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
@@ -140,6 +207,11 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
@@ -153,20 +225,67 @@
   }
 
   ::selection {
-    background: hsl(38 92% 55% / 0.25);
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
 
-  /* thin, unobtrusive scrollbars */
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-color: var(--rule) transparent;
   }
   *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   *::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: var(--rule);
     border-radius: 9999px;
+  }
+}
+
+@layer components {
+  /*
+   * The section grammar: eyebrow → headline → deck. One repeated module gives
+   * a long page a spine, and the eyebrow doubles as the "you are here" marker.
+   */
+  .eyebrow {
+    @apply text-[0.6875rem] font-medium uppercase text-ink-4;
+    letter-spacing: 0.14em;
+  }
+
+  /* No display face — size, weight and tight tracking carry the page title. */
+  .display {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    @apply text-ink-1;
+  }
+
+  /* Hairline separation — the card border's replacement. */
+  .rule-y > * + * {
+    @apply border-t border-rule;
+  }
+
+  /*
+   * The log pane owns its palette in BOTH themes. A terminal that flips to
+   * white is wrong, and inheriting `--foreground` inside a dark box renders
+   * black-on-black in light mode.
+   */
+  .log-pane {
+    --log-fg: hsl(0 0% 86%);
+    --log-dim: hsl(0 0% 47%);
+    background: hsl(0 0% 8%);
+    color: var(--log-fg);
+    border: 1px solid hsl(0 0% 16%);
+    scrollbar-color: hsl(0 0% 30%) transparent;
+  }
+  .log-pane::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 30%);
+  }
+  .log-pane ::selection {
+    background: hsl(38 92% 58% / 0.3);
+    color: inherit;
+  }
+  .log-dim {
+    color: var(--log-dim);
   }
 }
