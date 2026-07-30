@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Database, RotateCcw } from '@lucide/vue'
+import { RotateCcw } from '@lucide/vue'
 import { useDatabasesFeed } from './databases.queries'
 import { databaseTone, titleCase } from './databases.status'
 import StatusBadge from './StatusBadge.vue'
@@ -10,7 +11,14 @@ import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { DatabaseListItem, DatabaseStatus, DatabaseType } from '@/types/api'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingRows,
+  PageHead,
+  PageShell,
+  SectionHead,
+} from '@/components/ui/section'
 import {
   Select,
   SelectContent,
@@ -39,11 +47,16 @@ const engineLabel: Record<DatabaseType, string> = {
   REDIS: 'Redis',
   MONGO: 'MongoDB',
 }
-const engineDot: Record<DatabaseType, string> = {
-  POSTGRES: 'bg-sky-500',
-  MYSQL: 'bg-amber-500',
-  REDIS: 'bg-red-500',
-  MONGO: 'bg-emerald-500',
+
+// An empty result after filtering is a different problem from having no data at
+// all, and needs a different way out.
+const filtered = computed(
+  () => statusFilter.value !== 'all' || typeFilter.value !== 'all' || projectFilter.value !== 'all',
+)
+function clearFilters() {
+  statusFilter.value = 'all'
+  typeFilter.value = 'all'
+  projectFilter.value = 'all'
 }
 
 function hostOf(d: DatabaseListItem) {
@@ -52,24 +65,20 @@ function hostOf(d: DatabaseListItem) {
 }
 
 function goToDatabase(d: DatabaseListItem) {
-  router.push(
-    `/projects/${d.environment.project.id}/env/${d.environment.id}/databases/${d.id}`,
-  )
+  router.push(`/projects/${d.environment.project.id}/env/${d.environment.id}/databases/${d.id}`)
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl px-6 py-10 sm:px-10">
-    <header class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-foreground">Databases</h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          Every managed database across your projects.
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
+  <PageShell>
+    <PageHead
+      eyebrow="Workspace"
+      title="Databases"
+      deck="Every managed database across your projects."
+    >
+      <template #actions>
         <Select v-model="projectFilter">
-          <SelectTrigger class="h-9 w-44">
+          <SelectTrigger class="h-8 w-40 text-xs" aria-label="Filter by project">
             <SelectValue placeholder="All projects" />
           </SelectTrigger>
           <SelectContent>
@@ -80,7 +89,7 @@ function goToDatabase(d: DatabaseListItem) {
           </SelectContent>
         </Select>
         <Select v-model="typeFilter">
-          <SelectTrigger class="h-9 w-36">
+          <SelectTrigger class="h-8 w-32 text-xs" aria-label="Filter by engine">
             <SelectValue placeholder="All engines" />
           </SelectTrigger>
           <SelectContent>
@@ -91,7 +100,7 @@ function goToDatabase(d: DatabaseListItem) {
           </SelectContent>
         </Select>
         <Select v-model="statusFilter">
-          <SelectTrigger class="h-9 w-36">
+          <SelectTrigger class="h-8 w-32 text-xs" aria-label="Filter by status">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -101,83 +110,80 @@ function goToDatabase(d: DatabaseListItem) {
             </SelectItem>
           </SelectContent>
         </Select>
-      </div>
-    </header>
+      </template>
+    </PageHead>
 
-    <div v-if="feed.isPending.value" class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <Skeleton v-for="n in 6" :key="n" class="h-32 rounded-xl" />
-    </div>
+    <div class="mt-12">
+      <LoadingRows v-if="feed.isPending.value" :rows="6" />
 
-    <div
-      v-else-if="feed.isError.value"
-      class="mt-8 flex flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 py-16 text-center"
-    >
-      <p class="text-sm text-destructive">{{ apiErrorMessage(feed.error.value) }}</p>
-      <Button variant="outline" size="sm" class="mt-4" @click="() => feed.refetch()">
-        <RotateCcw />
-        Retry
-      </Button>
-    </div>
+      <ErrorState
+        v-else-if="feed.isError.value"
+        :message="apiErrorMessage(feed.error.value, 'Could not load databases.')"
+        :retrying="feed.isFetching.value"
+        @retry="() => feed.refetch()"
+      />
 
-    <div
-      v-else-if="items.length === 0"
-      class="mt-10 flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center"
-    >
-      <div class="flex size-12 items-center justify-center rounded-full bg-primary/10">
-        <Database class="size-6 text-primary" />
-      </div>
-      <h2 class="mt-4 text-base font-medium text-foreground">No databases found</h2>
-      <p class="mt-1 max-w-sm text-sm text-muted-foreground">
-        Add a database to an environment and it will show up here.
-      </p>
-    </div>
+      <EmptyState
+        v-else-if="items.length === 0 && filtered"
+        title="Nothing matches those filters"
+        deck="Widen the search to see the databases you do have."
+      >
+        <template #action>
+          <Button variant="outline" size="sm" @click="clearFilters">Clear filters</Button>
+        </template>
+      </EmptyState>
 
-    <div v-else class="mt-8">
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <button
-          v-for="d in items"
-          :key="d.id"
-          type="button"
-          class="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:border-primary focus-visible:outline-none"
-          @click="goToDatabase(d)"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <span class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span class="size-2 rounded-full" :class="engineDot[d.type]" />
+      <EmptyState
+        v-else-if="items.length === 0"
+        title="No managed databases"
+        deck="Add one from an environment and it will appear here with its connection details."
+      />
+
+      <div v-else>
+        <SectionHead eyebrow="All databases" :count="items.length" />
+        <div class="rule-y">
+          <button
+            v-for="d in items"
+            :key="d.id"
+            type="button"
+            class="flex w-full items-center gap-4 py-4 text-left transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
+            @click="goToDatabase(d)"
+          >
+            <StatusBadge :tone="databaseTone[d.status]" :label="titleCase(d.status)" />
+
+            <span class="min-w-0 shrink-0 basis-56">
+              <span class="block truncate font-mono text-sm text-ink-1">{{ d.name }}</span>
+              <span class="mt-0.5 block truncate text-xs text-ink-4">
+                {{ d.environment.project.name }}/{{ d.environment.name }}
+              </span>
+            </span>
+
+            <span class="hidden shrink-0 basis-32 text-xs text-ink-3 sm:block">
               {{ engineLabel[d.type] }} {{ d.version }}
             </span>
-            <StatusBadge :tone="databaseTone[d.status]" :label="titleCase(d.status)" />
-          </div>
 
-          <div class="min-w-0">
-            <p class="truncate font-mono text-sm font-medium text-foreground">{{ d.name }}</p>
-            <p class="mt-0.5 truncate text-xs text-muted-foreground">
-              {{ d.environment.project.name }}
-              <span class="text-muted-foreground/50">/</span>
-              {{ d.environment.name }}
-            </p>
-          </div>
+            <code class="min-w-0 flex-1 truncate font-mono text-xs text-ink-4">
+              {{ hostOf(d) }}
+            </code>
 
-          <div class="mt-auto flex items-center justify-between gap-2 pt-1">
-            <code class="truncate font-mono text-xs text-muted-foreground/80">{{ hostOf(d) }}</code>
-            <span class="shrink-0 text-xs text-muted-foreground/60">
+            <span class="shrink-0 basis-24 text-right text-xs text-ink-4">
               {{ relativeTime(d.createdAt) }}
             </span>
-          </div>
-        </button>
-      </div>
+          </button>
+        </div>
 
-      <div v-if="feed.hasNextPage.value" class="mt-6 flex justify-center">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="feed.isFetchingNextPage.value"
-          @click="() => feed.fetchNextPage()"
-        >
-          <RotateCcw v-if="feed.isFetchingNextPage.value" class="animate-spin" />
-          {{ feed.isFetchingNextPage.value ? 'Loading…' : 'Load more' }}
-        </Button>
+        <div v-if="feed.hasNextPage.value" class="mt-8 flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            :disabled="feed.isFetchingNextPage.value"
+            @click="() => feed.fetchNextPage()"
+          >
+            <RotateCcw v-if="feed.isFetchingNextPage.value" class="animate-spin" />
+            {{ feed.isFetchingNextPage.value ? 'Loading…' : 'Load more' }}
+          </Button>
+        </div>
       </div>
     </div>
-  </div>
+  </PageShell>
 </template>

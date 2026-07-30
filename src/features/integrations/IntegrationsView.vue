@@ -8,6 +8,7 @@ import IntegrationsGuide from './IntegrationsGuide.vue'
 import RepoBrowser from './RepoBrowser.vue'
 import { integrationKeys, useConnections } from './integrations.queries'
 import CreateProjectDialog from '@/features/projects/CreateProjectDialog.vue'
+import { PageHead, PageShell, SectionHead } from '@/components/ui/section'
 import type { Project, ProjectPrefill, RepoSummary } from '@/types/api'
 
 const route = useRoute()
@@ -63,27 +64,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl px-6 py-10 sm:px-10">
-    <header>
-      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Integrations</h1>
-      <p class="mt-1 text-sm text-muted-foreground">
-        Connect a Git provider and deploy straight from your repositories.
-      </p>
-    </header>
+  <PageShell>
+    <PageHead
+      eyebrow="Workspace"
+      title="Integrations"
+      deck="Connect a Git provider and deploy straight from your repositories."
+    />
 
-    <div class="mt-6 space-y-4">
-      <ConnectionCard
-        :connection="connection"
-        :loading="isPending"
-        :not-configured="notConfigured"
-      />
-      <IntegrationsGuide />
-    </div>
+    <section class="mt-12">
+      <SectionHead eyebrow="Providers" />
+      <div class="space-y-4 pt-4">
+        <ConnectionCard
+          :connection="connection"
+          :loading="isPending"
+          :not-configured="notConfigured"
+        />
+        <IntegrationsGuide />
+      </div>
+    </section>
 
-    <div class="mt-8">
+    <section class="mt-10">
       <RepoBrowser :connected="isConnected" @deploy="onDeploy" />
-    </div>
+    </section>
 
     <CreateProjectDialog v-model:open="dialogOpen" :prefill="prefill" @created="onCreated" />
-  </div>
+  </PageShell>
 </template>
