@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
 import {
-  ArrowLeft,
+  ArrowDown,
   Ban,
+  Bell,
+  BellOff,
   Check,
+  Download,
   ExternalLink,
   GitBranch,
   GitMerge,
@@ -13,13 +16,14 @@ import {
   LoaderCircle,
   Play,
   RefreshCw,
-  RotateCcw,
   RotateCw,
+  Search,
   Square,
   SquareTerminal,
   TriangleAlert,
   Undo2,
   Wrench,
+  WrapText,
   X,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -33,10 +37,11 @@ import {
   useServiceAction,
 } from './deployments.queries'
 import type { ServiceAction } from './deployments.api'
-import type { MaintenanceActionDef } from '@/types/api'
+import type { DeploymentStageStatus, MaintenanceActionDef } from '@/types/api'
 import { useDeploymentLogs } from './useDeploymentLogs'
 import { useRuntimeLogs } from './useRuntimeLogs'
 import { useDeploymentAction } from './useDeploymentAction'
+import { useDeployWatch } from './useDeployWatch'
 import AnsiLine from './AnsiLine.vue'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
 import ServiceHealthBadge from './ServiceHealthBadge.vue'
@@ -50,14 +55,15 @@ import {
   statusTextClass,
   titleCase,
 } from './deployments.status'
-import { useProjectBranches } from '@/features/projects/projects.queries'
+import { useProject, useProjectBranches } from '@/features/projects/projects.queries'
 import { toBranchMetaMap } from '@/features/projects/branchMeta'
-import { relativeTime } from '@/lib/time'
+import { durationLabel, relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import { shortSha } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Breadcrumb, ErrorState, PageShell } from '@/components/ui/section'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -123,6 +129,24 @@ const isActive = computed(
   () => !!deployment.value && !isTerminalStatus(deployment.value.status),
 )
 const canRedeploy = computed(() => !!deployment.value && !isActive.value)
+
+// How long the build took — the first thing you look for on a finished deploy.
+const buildDuration = computed(() =>
+  durationLabel(deployment.value?.startedAt ?? null, deployment.value?.finishedAt ?? null),
+)
+
+/*
+ * A stage left PENDING on a deployment that has already finished never ran —
+ * it was skipped. Rendering it as "Pending" forever makes a completed deploy
+ * look hung, which is the single most confusing thing on this page.
+ */
+function stageLabel(status: DeploymentStageStatus): string {
+  if (status === 'PENDING' && !isActive.value) return 'Skipped'
+  return titleCase(status)
+}
+function stageDisplayTone(status: DeploymentStageStatus) {
+  return stageTone[status === 'PENDING' && !isActive.value ? 'SKIPPED' : status]
+}
 const canRollback = computed(() => deployment.value?.status === 'SUCCEEDED')
 const liveUrl = computed(() => {
   const d = deployment.value
@@ -153,6 +177,10 @@ const mergeBranches = computed(
 const hasBranchSet = computed(() => !!sourceBranch.value || mergeBranches.value.length > 0)
 
 const projectId = computed(() => deployment.value?.environment?.projectId ?? '')
+// The deployment payload carries only projectId, so resolve the name for the
+// breadcrumb (usually already cached from the project page).
+const projectQuery = useProject(projectId)
+const projectName = computed(() => projectQuery.data.value?.name ?? 'Project')
 const sourceName = computed(() => sourceBranch.value?.name)
 const branchMetaQuery = useProjectBranches(projectId, {
   base: () => sourceName.value,
@@ -161,14 +189,77 @@ const branchMetaQuery = useProjectBranches(projectId, {
 const branchMeta = computed(() => toBranchMetaMap(branchMetaQuery.data.value))
 const metaFor = (name: string) => branchMeta.value[name] ?? null
 
+const { notifyEnabled, permissionState, toggleNotifications } = useDeployWatch({
+  status: () => deployment.value?.status,
+  label: () => `${projectName.value}/${deployment.value?.environment?.name ?? ''}`,
+  onFinish: (status) => {
+    if (status === 'SUCCEEDED') toast.success('Deployment succeeded')
+    else if (status === 'FAILED') toast.error('Deployment failed')
+    else toast.info(`Deployment ${status.toLowerCase()}`)
+  },
+})
+
 const logEl = ref<HTMLElement | null>(null)
+
+/*
+ * Follow the tail only while the reader is already at the bottom. Scrolling up
+ * during a live build used to be impossible — every incoming line yanked you
+ * back down, exactly when you were trying to read the error that caused it.
+ */
+const pinned = ref(true)
+const BOTTOM_SLACK = 24
+
+function onLogScroll() {
+  const el = logEl.value
+  if (!el) return
+  pinned.value = el.scrollHeight - el.scrollTop - el.clientHeight <= BOTTOM_SLACK
+}
+
+function scrollToLatest() {
+  const el = logEl.value
+  if (!el) return
+  el.scrollTop = el.scrollHeight
+  pinned.value = true
+}
+
 watch(
   [() => activeLines.value.length, activeTab],
   async () => {
     await nextTick()
-    if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight
+    if (pinned.value) scrollToLatest()
   },
 )
+
+// Switching tabs is an explicit "show me this stream", so re-pin.
+watch(activeTab, () => {
+  pinned.value = true
+})
+
+const logFilter = ref('')
+const wrapLines = ref(true)
+
+const visibleLines = computed(() => {
+  const q = logFilter.value.trim().toLowerCase()
+  if (!q) return activeLines.value
+  return activeLines.value.filter(
+    (e) => e.line.toLowerCase().includes(q) || (e.stage ?? '').toLowerCase().includes(q),
+  )
+})
+
+const hiddenCount = computed(() => activeLines.value.length - visibleLines.value.length)
+
+function downloadLogs() {
+  const name = `${activeTab.value}-${shortSha(deployment.value?.commitSha) ?? props.id}.log`
+  const body = activeLines.value
+    .map((e) => (e.stage ? `[${e.stage}] ${e.line}` : e.line))
+    .join('\n')
+  const url = URL.createObjectURL(new Blob([body], { type: 'text/plain' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 async function onCancel() {
   try {
@@ -255,7 +346,7 @@ watch(
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-6 py-10 sm:px-10">
+  <PageShell>
     <!-- loading -->
     <div v-if="isPending" class="space-y-6">
       <Skeleton class="h-8 w-64" />
@@ -264,25 +355,25 @@ watch(
     </div>
 
     <!-- error -->
-    <div
+    <ErrorState
       v-else-if="isError || !deployment"
-      class="mt-10 flex flex-col items-center rounded-xl border border-destructive/30 bg-destructive/5 py-16 text-center"
-    >
-      <p class="text-sm text-destructive">{{ apiErrorMessage(error, 'Deployment not found.') }}</p>
-      <Button variant="outline" size="sm" class="mt-4" @click="() => refetch()">
-        <RotateCcw />
-        Retry
-      </Button>
-    </div>
+      class="mt-10"
+      :message="apiErrorMessage(error, 'Deployment not found.')"
+      @retry="() => refetch()"
+    />
 
     <template v-else>
-      <RouterLink
-        :to="`/projects/${deployment.environment?.projectId}/env/${deployment.environmentId}`"
-        class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft class="size-4" />
-        {{ deployment.environment?.name ?? 'Environment' }}
-      </RouterLink>
+      <Breadcrumb
+        :items="[
+          { label: projectName, to: `/projects/${deployment.environment?.projectId}` },
+          {
+            label: deployment.environment?.name ?? 'environment',
+            to: `/projects/${deployment.environment?.projectId}/env/${deployment.environmentId}`,
+            mono: true,
+          },
+          { label: shortSha(deployment.commitSha) ?? 'deployment', mono: true },
+        ]"
+      />
 
       <header class="mt-4 flex items-start justify-between gap-4">
         <div class="min-w-0">
@@ -295,8 +386,9 @@ watch(
           <p class="mt-2 truncate text-foreground">
             {{ deployment.commitMessage ?? 'No commit message' }}
           </p>
-          <p class="mt-1 text-xs text-muted-foreground">
+          <p class="mt-1 text-xs text-ink-3">
             {{ deployment.commitAuthor ?? 'unknown' }} · {{ relativeTime(deployment.createdAt) }}
+            <template v-if="buildDuration"> · built in {{ buildDuration }}</template>
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
@@ -314,11 +406,29 @@ watch(
           <span
             v-else-if="liveUrl && webOffline"
             class="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive"
-            title="The web service is stopped — start it to bring the site back"
+            title="This build finished fine — the container is not running now. Start it below to bring the site back."
           >
             <TriangleAlert class="size-3.5" />
-            Site offline
+            Not running
           </span>
+          <!-- Offered only while it's still running, since that's the only time
+               "tell me when it's done" means anything. -->
+          <Button
+            v-if="isActive && permissionState !== 'unsupported' && permissionState !== 'denied'"
+            variant="outline"
+            size="sm"
+            :aria-pressed="notifyEnabled"
+            :title="
+              notifyEnabled
+                ? 'You will be notified when this finishes'
+                : 'Notify me when this finishes'
+            "
+            @click="toggleNotifications"
+          >
+            <Bell v-if="notifyEnabled" class="text-primary" />
+            <BellOff v-else />
+            {{ notifyEnabled ? 'Notifying' : 'Notify me' }}
+          </Button>
           <Button
             v-if="isActive"
             variant="outline"
@@ -441,11 +551,21 @@ watch(
             v-for="stage in deployment.stages"
             :key="stage.id"
             class="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
+            :class="stageLabel(stage.status) === 'Skipped' && 'opacity-55'"
           >
-            <span class="size-2 rounded-full" :class="statusDotClass[stageTone[stage.status]]" />
+            <span
+              class="size-2 rounded-full"
+              :class="statusDotClass[stageDisplayTone(stage.status)]"
+            />
             <span class="flex-1 font-mono text-sm text-foreground">{{ stage.name }}</span>
-            <span class="text-xs font-medium" :class="statusTextClass[stageTone[stage.status]]">
-              {{ titleCase(stage.status) }}
+            <span class="font-mono text-xs text-ink-4">
+              {{ durationLabel(stage.startedAt, stage.finishedAt) }}
+            </span>
+            <span
+              class="w-20 text-right text-xs font-medium"
+              :class="statusTextClass[stageDisplayTone(stage.status)]"
+            >
+              {{ stageLabel(stage.status) }}
             </span>
           </li>
         </ol>
@@ -660,20 +780,19 @@ watch(
           </div>
           <div
             ref="maintLogEl"
-            class="h-64 overflow-auto p-4 font-mono text-xs leading-relaxed"
-            style="background: #0a0d14"
+            class="log-pane h-64 overflow-auto p-4 font-mono text-xs leading-relaxed"
           >
             <p v-if="maintError" class="text-destructive">{{ maintError }}</p>
             <p
               v-else-if="maintLines.length === 0 && maintStatus === 'running'"
-              class="text-muted-foreground"
+              class="log-dim"
             >
               Running…
             </p>
             <div
               v-for="(line, i) in maintLines"
               :key="i"
-              class="whitespace-pre-wrap wrap-break-word text-foreground/90"
+              class="whitespace-pre-wrap wrap-break-word"
             >
               <AnsiLine :text="line" />
             </div>
@@ -712,13 +831,48 @@ watch(
               Runtime logs
             </button>
           </div>
-          <span class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span
-              class="size-1.5 rounded-full"
-              :class="activeConnected ? 'bg-success' : 'bg-muted-foreground/40'"
-            />
-            {{ activeConnected ? 'live' : 'offline' }}
-          </span>
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <Search
+                class="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-ink-4"
+                aria-hidden="true"
+              />
+              <input
+                v-model="logFilter"
+                type="text"
+                aria-label="Filter log lines"
+                placeholder="Filter…"
+                class="h-7 w-36 rounded-md border border-rule bg-transparent pl-7 pr-2 font-mono text-xs text-ink-1 outline-none placeholder:text-ink-4 focus:border-ink-4"
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              :title="wrapLines ? 'Disable line wrapping' : 'Enable line wrapping'"
+              :aria-label="wrapLines ? 'Disable line wrapping' : 'Enable line wrapping'"
+              :aria-pressed="wrapLines"
+              @click="wrapLines = !wrapLines"
+            >
+              <WrapText :class="!wrapLines && 'opacity-40'" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Download logs"
+              aria-label="Download logs"
+              :disabled="activeLines.length === 0"
+              @click="downloadLogs"
+            >
+              <Download />
+            </Button>
+            <span class="inline-flex items-center gap-1.5 text-xs text-ink-3">
+              <span
+                class="size-1.5 rounded-full"
+                :class="activeConnected ? 'bg-signal-live' : 'bg-signal-idle'"
+              />
+              {{ activeConnected ? 'live' : 'offline' }}
+            </span>
+          </div>
         </div>
         <div
           v-if="activeTab === 'runtime' && services.length > 1"
@@ -744,31 +898,53 @@ watch(
             <span v-if="svc.isWeb" class="text-[10px] opacity-70">web</span>
           </button>
         </div>
-        <div
-          ref="logEl"
-          class="mt-3 h-96 overflow-auto rounded-xl border border-border p-4 font-mono text-xs leading-relaxed"
-          style="background: #0a0d14"
-        >
-          <p v-if="activeLines.length === 0" class="text-muted-foreground">
-            <template v-if="activeTab === 'runtime'">
-              {{
-                runtimeAvailable
-                  ? 'Waiting for output…'
-                  : 'Runtime logs are available while the deployment is running.'
-              }}
-            </template>
-            <template v-else>
-              {{ isActive ? 'Waiting for logs…' : 'No logs for this deployment.' }}
-            </template>
-          </p>
+        <div class="relative mt-3">
           <div
-            v-for="entry in activeLines"
-            :key="entry.key"
-            class="whitespace-pre-wrap wrap-break-word text-foreground/90"
+            ref="logEl"
+            class="log-pane h-96 overflow-auto rounded-lg p-4 font-mono text-xs leading-relaxed"
+            @scroll.passive="onLogScroll"
           >
-            <span v-if="entry.stage" class="mr-2 text-muted-foreground/60">[{{ entry.stage }}]</span><AnsiLine :text="entry.line" />
+            <p v-if="activeLines.length === 0" class="log-dim">
+              <template v-if="activeTab === 'runtime'">
+                {{
+                  runtimeAvailable
+                    ? 'Waiting for output…'
+                    : 'Runtime logs are available while the deployment is running.'
+                }}
+              </template>
+              <template v-else>
+                {{ isActive ? 'Waiting for logs…' : 'No logs for this deployment.' }}
+              </template>
+            </p>
+
+            <p v-else-if="visibleLines.length === 0" class="log-dim">
+              No line matches “{{ logFilter }}”.
+            </p>
+
+            <div
+              v-for="entry in visibleLines"
+              :key="entry.key"
+              :class="wrapLines ? 'whitespace-pre-wrap wrap-break-word' : 'whitespace-pre'"
+            >
+              <span v-if="entry.stage" class="log-dim mr-2">[{{ entry.stage }}]</span><AnsiLine :text="entry.line" />
+            </div>
           </div>
+
+          <!-- Only offered when the reader has scrolled away from the tail. -->
+          <button
+            v-if="!pinned && activeLines.length > 0"
+            type="button"
+            class="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-lg transition hover:brightness-105"
+            @click="scrollToLatest"
+          >
+            <ArrowDown class="size-3.5" aria-hidden="true" />
+            Jump to latest
+          </button>
         </div>
+
+        <p v-if="hiddenCount > 0" class="mt-2 text-xs text-ink-4">
+          {{ hiddenCount }} line{{ hiddenCount === 1 ? '' : 's' }} hidden by the filter.
+        </p>
       </section>
     </template>
 
@@ -777,5 +953,5 @@ watch(
       :deployment-id="props.id"
       :service="terminalService"
     />
-  </div>
+  </PageShell>
 </template>
