@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ArrowLeft, Camera, Copy, LoaderCircle, RotateCcw, Trash2, Undo2 } from '@lucide/vue'
+import {
+  Anchor,
+  ArrowLeft,
+  Camera,
+  Copy,
+  LoaderCircle,
+  RotateCcw,
+  Trash2,
+  Undo2,
+} from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useDatabase, useDeleteDatabase } from './databases.queries'
 import {
@@ -9,9 +18,11 @@ import {
   useDeleteSnapshot,
   useRestoreSnapshot,
   useSnapshots,
+  useUpdateSnapshot,
 } from './snapshots.queries'
 import StatusBadge from './StatusBadge.vue'
 import { databaseTone, snapshotTone, titleCase } from './databases.status'
+import type { DatabaseSnapshot } from '@/types/api'
 import { relativeTime } from '@/lib/time'
 import { formatBytes } from '@/lib/utils'
 import { apiErrorMessage } from '@/lib/api'
@@ -49,6 +60,22 @@ const {
 const createSnapshot = useCreateSnapshot(() => props.databaseId)
 const restoreSnapshot = useRestoreSnapshot(() => props.databaseId)
 const deleteSnapshot = useDeleteSnapshot(() => props.databaseId)
+const markBaseline = useUpdateSnapshot(() => props.databaseId)
+
+// Toggling off would leave the environment with no reset point, so the anchor
+// only ever promotes — clearing happens by promoting a different snapshot.
+async function onSetBaseline(s: DatabaseSnapshot) {
+  if (s.isBaseline) {
+    toast.info('Already the reset point for this database')
+    return
+  }
+  try {
+    await markBaseline.mutateAsync({ id: s.id, input: { isBaseline: true } })
+    toast.success('Reset point updated')
+  } catch (err) {
+    toast.error(apiErrorMessage(err, 'Could not set the reset point'))
+  }
+}
 
 const connString = computed(() =>
   db.value?.host && db.value.port ? `${db.value.host}:${db.value.port}` : '—',
@@ -273,11 +300,32 @@ async function onDeleteSnapshot(id: string) {
           >
             <StatusBadge :tone="snapshotTone[s.status]" :label="titleCase(s.status)" />
             <div class="min-w-0 flex-1">
-              <p class="text-sm text-foreground">{{ relativeTime(s.createdAt) }}</p>
+              <p class="flex items-center gap-2 text-sm text-foreground">
+                <span class="truncate">{{ s.label || relativeTime(s.createdAt) }}</span>
+                <span
+                  v-if="s.isBaseline"
+                  class="shrink-0 rounded-full bg-primary/12 px-2 py-0.5 font-mono text-[10px] font-medium text-primary"
+                >
+                  baseline
+                </span>
+              </p>
               <p class="mt-0.5 text-xs text-muted-foreground">
+                <template v-if="s.label">{{ relativeTime(s.createdAt) }} · </template>
                 {{ s.status === 'READY' ? formatBytes(s.sizeBytes) : s.errorSummary ?? '—' }}
               </p>
             </div>
+
+            <!-- baseline: the state "Reset data" on the environment returns to -->
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              :title="s.isBaseline ? 'This is the reset point' : 'Make this the reset point'"
+              :aria-pressed="s.isBaseline"
+              :disabled="s.status !== 'READY' || markBaseline.isPending.value"
+              @click="onSetBaseline(s)"
+            >
+              <Anchor :class="s.isBaseline ? 'text-primary' : 'opacity-50'" />
+            </Button>
 
             <!-- restore -->
             <AlertDialog>

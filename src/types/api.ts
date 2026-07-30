@@ -341,7 +341,15 @@ export interface DatabaseSnapshot {
   storageKey: string | null
   sizeBytes: string | null
   errorSummary: string | null
+  label: string | null
+  // The state `POST /environments/:id/reset` returns this database to.
+  isBaseline: boolean
   createdAt: string
+}
+
+export interface EnvironmentResetResult {
+  restored: { database: string; snapshotId: string }[]
+  skipped: { database: string; reason: string }[]
 }
 
 export interface DatabaseListItem {

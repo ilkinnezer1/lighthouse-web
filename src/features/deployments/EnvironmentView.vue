@@ -10,6 +10,7 @@ import { useDatabases } from '@/features/databases/databases.queries'
 import StatusBadge from '@/features/databases/StatusBadge.vue'
 import { databaseTone, titleCase } from '@/features/databases/databases.status'
 import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
+import ResetEnvironmentButton from '@/features/databases/ResetEnvironmentButton.vue'
 import EnvVarsSection from '@/features/env-vars/EnvVarsSection.vue'
 import EnvFilesSection from '@/features/env-files/EnvFilesSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
@@ -144,6 +145,7 @@ const canManageEnv = useCan('env.manage')
     <section class="mt-10">
       <SectionHead eyebrow="Databases" :count="databases?.length ?? 0">
         <template #actions>
+          <ResetEnvironmentButton :env-id="envId" :database-count="databases?.length ?? 0" />
           <Button
             v-if="canManageEnv"
             size="sm"
