@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ChevronDown, ChevronUp, LoaderCircle, Plus, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useUpdateProject } from './projects.queries'
 import { apiErrorMessage } from '@/lib/api'
-import type { BuildConfig, MaintenanceActionConfig, Project, SetupStep } from '@/types/api'
+import type {
+  BuildConfig,
+  BuildStrategy,
+  MaintenanceActionConfig,
+  Project,
+  SetupStep,
+} from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -23,15 +29,67 @@ const open = defineModel<boolean>('open', { required: true })
 
 const updateProject = useUpdateProject(() => props.project.id)
 
-type StrategyChoice = 'auto' | 'dockerfile' | 'compose' | 'sandbox-yml'
-const STRATEGIES: { value: StrategyChoice; label: string }[] = [
-  { value: 'auto', label: 'Auto-detect' },
-  { value: 'dockerfile', label: 'Dockerfile' },
-  { value: 'compose', label: 'Compose' },
-  { value: 'sandbox-yml', label: 'sandbox.yml' },
+type StrategyChoice = 'auto' | BuildStrategy
+const STRATEGIES: { value: StrategyChoice; label: string; hint: string }[] = [
+  {
+    value: 'auto',
+    label: 'Auto-detect',
+    hint: 'Compose file, then Dockerfile, then a generated Dockerfile.',
+  },
+  { value: 'dockerfile', label: 'Dockerfile', hint: "Builds the repo's own Dockerfile." },
+  { value: 'compose', label: 'Compose', hint: 'Builds every service in the compose file.' },
+  {
+    value: 'generated',
+    label: 'Generated',
+    hint: 'Lighthouse writes a version-matched Dockerfile for you.',
+  },
+  { value: 'nixpacks', label: 'Nixpacks', hint: 'Zero-config builder, no Dockerfile needed.' },
+  {
+    value: 'buildpacks',
+    label: 'Buildpacks',
+    hint: 'Cloud Native Buildpacks, built by Heroku or Paketo.',
+  },
+  { value: 'railpack', label: 'Railpack', hint: "Nixpacks' successor — builds with BuildKit." },
+  {
+    value: 'image',
+    label: 'Prebuilt image',
+    hint: 'Pulls a registry image — no clone, no build.',
+  },
+]
+
+// The builders that compile from source; only these read the build/start
+// command, runtime version and root directory.
+const SOURCE_BUILD: StrategyChoice[] = ['auto', 'generated', 'nixpacks', 'buildpacks', 'railpack']
+
+type BuilderChoice = 'heroku' | 'paketo' | 'custom'
+const BUILDERS: { value: BuilderChoice; label: string }[] = [
+  { value: 'heroku', label: 'Heroku' },
+  { value: 'paketo', label: 'Paketo' },
+  { value: 'custom', label: 'Custom' },
 ]
 
 const strategy = ref<StrategyChoice>('auto')
+const builderChoice = ref<BuilderChoice>('heroku')
+const builderImage = ref('')
+const buildpacksText = ref('')
+const buildCommand = ref('')
+const startCommand = ref('')
+const runtimeVersion = ref('')
+const rootDir = ref('')
+
+const image = ref('')
+const port = ref('')
+const cpuLimit = ref('')
+const memoryMb = ref('')
+
+const strategyHint = computed(
+  () => STRATEGIES.find((s) => s.value === strategy.value)?.hint ?? '',
+)
+const showSourceFields = computed(() => SOURCE_BUILD.includes(strategy.value))
+const showBuilder = computed(() => strategy.value === 'buildpacks')
+const showImage = computed(() => strategy.value === 'image')
+// Compose services get their limits from the compose file's own deploy.resources.
+const showLimits = computed(() => strategy.value !== 'compose')
 const web = ref('')
 // cmd / dbMigrate are argv arrays; edited as a single line, split on whitespace.
 const cmdText = ref('')
@@ -50,6 +108,19 @@ const saving = ref(false)
 function seedFromProject() {
   const bc = props.project.buildConfig ?? {}
   strategy.value = bc.strategy ?? 'auto'
+  const builder = bc.builder ?? ''
+  builderChoice.value =
+    builder === 'paketo' ? 'paketo' : builder && builder !== 'heroku' ? 'custom' : 'heroku'
+  builderImage.value = builderChoice.value === 'custom' ? builder : ''
+  buildpacksText.value = (bc.buildpacks ?? []).join(' ')
+  image.value = bc.image ?? ''
+  port.value = bc.port ? String(bc.port) : ''
+  cpuLimit.value = bc.cpuLimit ? String(bc.cpuLimit) : ''
+  memoryMb.value = bc.memoryMb ? String(bc.memoryMb) : ''
+  buildCommand.value = bc.buildCommand ?? ''
+  startCommand.value = bc.startCommand ?? ''
+  runtimeVersion.value = bc.runtimeVersion ?? ''
+  rootDir.value = bc.rootDir ?? ''
   web.value = bc.web ?? ''
   cmdText.value = (bc.cmd ?? []).join(' ')
   dbMigrateText.value = (bc.dbMigrate ?? []).join(' ')
@@ -145,6 +216,31 @@ function assemble(): BuildConfig {
 
   if (composePath.value.trim()) bc.composePath = composePath.value.trim()
 
+  // Only persist knobs the selected strategy actually reads, so a hidden field
+  // can never keep steering a build the user can no longer see.
+  if (showSourceFields.value) {
+    if (buildCommand.value.trim()) bc.buildCommand = buildCommand.value.trim()
+    if (startCommand.value.trim()) bc.startCommand = startCommand.value.trim()
+    if (runtimeVersion.value.trim()) bc.runtimeVersion = runtimeVersion.value.trim()
+    if (rootDir.value.trim()) bc.rootDir = rootDir.value.trim()
+  }
+  if (showImage.value && image.value.trim()) bc.image = image.value.trim()
+  const portNum = Number(port.value.trim())
+  if (portNum > 0) bc.port = portNum
+  if (showLimits.value) {
+    const cpu = Number(cpuLimit.value.trim())
+    const mem = Number(memoryMb.value.trim())
+    if (cpu > 0) bc.cpuLimit = cpu
+    if (mem > 0) bc.memoryMb = mem
+  }
+  if (showBuilder.value) {
+    const builder =
+      builderChoice.value === 'custom' ? builderImage.value.trim() : builderChoice.value
+    if (builder) bc.builder = builder
+    const buildpacks = buildpacksText.value.trim().split(/[\s,]+/).filter(Boolean)
+    if (buildpacks.length) bc.buildpacks = buildpacks
+  }
+
   // Keep only steps with a command; omit empty image/docker so the API's
   // .strict() per-step schema stays happy.
   const steps: SetupStep[] = []
@@ -190,7 +286,7 @@ async function onSave() {
       <div class="grid max-h-[60vh] gap-5 overflow-y-auto py-1 pr-1">
         <!-- strategy -->
         <div class="grid gap-2">
-          <Label>Build strategy</Label>
+          <Label>Build method</Label>
           <div class="grid grid-cols-2 gap-2">
             <button
               v-for="s in STRATEGIES"
@@ -207,9 +303,100 @@ async function onSave() {
               {{ s.label }}
             </button>
           </div>
+          <p class="text-xs text-muted-foreground">{{ strategyHint }}</p>
+        </div>
+
+        <!-- prebuilt image -->
+        <div v-if="showImage" class="grid gap-2">
+          <Label for="bc-image">Image</Label>
+          <Input
+            id="bc-image"
+            v-model="image"
+            placeholder="nginx:1.27 or ghcr.io/acme/app:sha-abc123"
+            class="font-mono text-sm"
+          />
+          <Input v-model="port" placeholder="port the image listens on, e.g. 80" class="font-mono text-sm" />
           <p class="text-xs text-muted-foreground">
-            Auto-detect picks Dockerfile, then compose, then sandbox.yml from the repo.
+            Private registries use the Lighthouse host's Docker credentials.
           </p>
+        </div>
+
+        <!-- resource limits -->
+        <div v-if="showLimits" class="grid gap-2">
+          <Label>Resource limits <span class="text-muted-foreground">(optional)</span></Label>
+          <div class="grid grid-cols-2 gap-2">
+            <Input v-model="cpuLimit" placeholder="CPU cores, e.g. 0.5" class="font-mono text-sm" />
+            <Input v-model="memoryMb" placeholder="Memory MB, e.g. 512" class="font-mono text-sm" />
+          </div>
+          <p class="text-xs text-muted-foreground">
+            Left blank, the container runs unconstrained. A container that exceeds its memory
+            limit is killed by Docker.
+          </p>
+        </div>
+
+        <!-- buildpacks builder -->
+        <div v-if="showBuilder" class="grid gap-2">
+          <Label>Builder</Label>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="b in BUILDERS"
+              :key="b.value"
+              type="button"
+              :class="[
+                'rounded-lg border px-3 py-2 text-sm transition-colors',
+                builderChoice === b.value
+                  ? 'border-primary bg-primary/10 text-foreground'
+                  : 'border-border text-muted-foreground hover:border-muted-foreground/40',
+              ]"
+              @click="builderChoice = b.value"
+            >
+              {{ b.label }}
+            </button>
+          </div>
+          <Input
+            v-if="builderChoice === 'custom'"
+            v-model="builderImage"
+            placeholder="ghcr.io/acme/builder:latest"
+            class="font-mono text-sm"
+          />
+          <Input
+            v-model="buildpacksText"
+            placeholder="extra buildpacks, e.g. paketo-buildpacks/nodejs"
+            class="font-mono text-sm"
+          />
+          <p class="text-xs text-muted-foreground">
+            Heroku reads your repo's version files; Paketo takes the runtime version below.
+          </p>
+        </div>
+
+        <!-- from-source build knobs -->
+        <div v-if="showSourceFields" class="grid gap-2">
+          <Label for="bc-build-cmd">
+            Build &amp; start <span class="text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            id="bc-build-cmd"
+            v-model="buildCommand"
+            placeholder="build command, e.g. npm run build"
+            class="font-mono text-sm"
+          />
+          <Input
+            v-model="startCommand"
+            placeholder="start command, e.g. node server.js"
+            class="font-mono text-sm"
+          />
+          <div class="grid grid-cols-2 gap-2">
+            <Input
+              v-model="runtimeVersion"
+              placeholder="runtime version, e.g. 20"
+              class="font-mono text-sm"
+            />
+            <Input
+              v-model="rootDir"
+              placeholder="root dir, e.g. apps/api"
+              class="font-mono text-sm"
+            />
+          </div>
         </div>
 
         <!-- setup steps -->

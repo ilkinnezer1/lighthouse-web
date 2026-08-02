@@ -122,8 +122,17 @@ export interface User {
   lastLoginAt: string | null
 }
 
+export type BuildStrategy =
+  | 'dockerfile'
+  | 'compose'
+  | 'generated'
+  | 'nixpacks'
+  | 'buildpacks'
+  | 'railpack'
+  | 'image'
+
 export interface BuildConfig {
-  strategy?: 'dockerfile' | 'compose' | 'sandbox-yml'
+  strategy?: BuildStrategy
   web?: string
   cmd?: string[]
   envs?: Record<string, string>
@@ -131,6 +140,17 @@ export interface BuildConfig {
   maintenanceActions?: MaintenanceActionConfig[]
   composePath?: string
   setupSteps?: SetupStep[]
+  buildCommand?: string
+  startCommand?: string
+  runtimeVersion?: string
+  rootDir?: string
+  // 'heroku' | 'paketo' preset, or any CNB builder image reference.
+  builder?: string
+  buildpacks?: string[]
+  image?: string
+  port?: number
+  cpuLimit?: number
+  memoryMb?: number
 }
 
 // Ordered shell commands that run after clone, before build, to generate a
