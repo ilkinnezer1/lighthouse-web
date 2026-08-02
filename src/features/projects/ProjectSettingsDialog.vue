@@ -10,6 +10,7 @@ import type {
   MaintenanceActionConfig,
   Project,
   SetupStep,
+  VolumeConfig,
 } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -87,6 +88,14 @@ const strategyHint = computed(
 )
 const showSourceFields = computed(() => SOURCE_BUILD.includes(strategy.value))
 const showBuilder = computed(() => strategy.value === 'buildpacks')
+const volumeRows = ref<{ name: string; path: string }[]>([])
+function addVolumeRow() {
+  volumeRows.value.push({ name: '', path: '' })
+}
+function removeVolumeRow(i: number) {
+  volumeRows.value.splice(i, 1)
+}
+
 const showImage = computed(() => strategy.value === 'image')
 // Compose services get their limits from the compose file's own deploy.resources.
 const showLimits = computed(() => strategy.value !== 'compose')
@@ -113,6 +122,7 @@ function seedFromProject() {
     builder === 'paketo' ? 'paketo' : builder && builder !== 'heroku' ? 'custom' : 'heroku'
   builderImage.value = builderChoice.value === 'custom' ? builder : ''
   buildpacksText.value = (bc.buildpacks ?? []).join(' ')
+  volumeRows.value = (bc.volumes ?? []).map((v) => ({ name: v.name, path: v.path }))
   image.value = bc.image ?? ''
   port.value = bc.port ? String(bc.port) : ''
   cpuLimit.value = bc.cpuLimit ? String(bc.cpuLimit) : ''
@@ -224,6 +234,15 @@ function assemble(): BuildConfig {
     if (runtimeVersion.value.trim()) bc.runtimeVersion = runtimeVersion.value.trim()
     if (rootDir.value.trim()) bc.rootDir = rootDir.value.trim()
   }
+  // Keep only fully-specified rows so a half-typed volume can't fail the save.
+  const volumes: VolumeConfig[] = []
+  for (const row of volumeRows.value) {
+    const name = row.name.trim()
+    const path = row.path.trim()
+    if (name && path) volumes.push({ name, path })
+  }
+  if (volumes.length) bc.volumes = volumes
+
   if (showImage.value && image.value.trim()) bc.image = image.value.trim()
   const portNum = Number(port.value.trim())
   if (portNum > 0) bc.port = portNum
@@ -319,6 +338,42 @@ async function onSave() {
           <p class="text-xs text-muted-foreground">
             Private registries use the Lighthouse host's Docker credentials.
           </p>
+        </div>
+
+        <!-- persistent volumes -->
+        <div v-if="strategy !== 'compose'" class="grid gap-2">
+          <div class="flex items-center justify-between">
+            <Label>Persistent volumes</Label>
+            <Button type="button" variant="ghost" size="sm" @click="addVolumeRow">
+              <Plus />
+              Add
+            </Button>
+          </div>
+          <p class="text-xs text-muted-foreground">
+            Data written here survives redeploys. Without a volume, anything the container
+            writes is lost the next time you deploy.
+          </p>
+          <div v-if="volumeRows.length === 0" class="text-xs text-muted-foreground">
+            No volumes.
+          </div>
+          <div v-for="(row, i) in volumeRows" :key="i" class="flex items-center gap-2">
+            <Input v-model="row.name" placeholder="uploads" class="w-1/3 font-mono text-sm" />
+            <Input
+              v-model="row.path"
+              placeholder="/app/storage/uploads"
+              class="flex-1 font-mono text-sm"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              class="shrink-0 text-muted-foreground"
+              title="Remove"
+              @click="removeVolumeRow(i)"
+            >
+              <X />
+            </Button>
+          </div>
         </div>
 
         <!-- resource limits -->

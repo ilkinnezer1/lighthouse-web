@@ -151,6 +151,13 @@ export interface BuildConfig {
   port?: number
   cpuLimit?: number
   memoryMb?: number
+  volumes?: VolumeConfig[]
+}
+
+// A named volume that survives redeploys, scoped per environment by the worker.
+export interface VolumeConfig {
+  name: string
+  path: string
 }
 
 // Ordered shell commands that run after clone, before build, to generate a
