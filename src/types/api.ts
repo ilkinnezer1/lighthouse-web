@@ -160,6 +160,16 @@ export interface VolumeConfig {
   path: string
 }
 
+// A volume as it actually exists in Docker. sizeBytes is -1 when Docker could
+// not report a size, so the UI shows "unknown" rather than a misleading 0.
+export interface VolumeInfo {
+  name: string
+  volume: string
+  sizeBytes: number
+  createdAt: string
+  inUse: boolean
+}
+
 // Ordered shell commands that run after clone, before build, to generate a
 // project's compose/.env. A failed step fails the deploy.
 export interface SetupStep {

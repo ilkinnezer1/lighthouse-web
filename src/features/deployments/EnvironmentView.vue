@@ -13,6 +13,7 @@ import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
 import ResetEnvironmentButton from '@/features/databases/ResetEnvironmentButton.vue'
 import EnvVarsSection from '@/features/env-vars/EnvVarsSection.vue'
 import EnvFilesSection from '@/features/env-files/EnvFilesSection.vue'
+import VolumesSection from '@/features/volumes/VolumesSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
 import ScheduledTasksSection from '@/features/scheduled-tasks/ScheduledTasksSection.vue'
 import { useCan } from '@/features/orgs/useCan'
@@ -136,6 +137,8 @@ const canManageEnv = useCan('env.manage')
     <ScheduledTasksSection :env-id="envId" :services="serviceNames" class="mt-10 block" />
 
     <EnvVarsSection :env-id="envId" class="mt-10 block" />
+
+    <VolumesSection :env-id="envId" class="mt-10 block" />
 
     <EnvFilesSection :env-id="envId" class="mt-10 block" />
 
