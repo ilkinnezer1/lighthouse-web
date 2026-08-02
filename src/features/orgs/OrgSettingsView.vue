@@ -7,6 +7,7 @@ import { useDeleteOrg, useOrgs, useRenameOrg } from './orgs.queries'
 import { useActiveOrgStore } from './active-org.store'
 import { ROLE_BADGE, ROLE_LABEL, roleCan } from './roles'
 import MembersSection from './MembersSection.vue'
+import NotificationsSection from '@/features/notifications/NotificationsSection.vue'
 import InvitePanel from '@/features/invitations/InvitePanel.vue'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { apiErrorMessage } from '@/lib/api'
@@ -38,6 +39,9 @@ const role = computed(() => org.value?.role)
 const canRename = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.update'))
 const canDelete = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.delete'))
 const canInvite = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'members.manage'))
+// Unlike invites, notifications make sense for a personal org too — a solo user
+// still wants a Slack ping when a deploy fails.
+const canNotify = computed(() => roleCan(role.value, 'notifications.manage'))
 
 const name = ref('')
 watch(org, (o) => { if (o) name.value = o.name }, { immediate: true })
@@ -135,6 +139,8 @@ async function onDelete() {
       />
 
       <InvitePanel v-if="canInvite" class="mt-10 block" :org-id="id" :actor-role="role" />
+
+      <NotificationsSection v-if="canNotify" class="mt-10 block" :org-id="id" />
 
       <!-- Danger zone -->
       <section v-if="canDelete" class="mt-12">

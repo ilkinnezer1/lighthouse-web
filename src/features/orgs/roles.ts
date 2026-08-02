@@ -37,6 +37,7 @@ export type Capability =
   | 'project.transfer'
   | 'members.manage'
   | 'audit.read'
+  | 'notifications.manage'
   | 'org.update'
   | 'org.delete'
   | 'org.transfer'
@@ -48,6 +49,7 @@ const ADMIN: Capability[] = [
   'project.transfer',
   'members.manage',
   'audit.read',
+  'notifications.manage',
 ]
 const OWNER: Capability[] = ['org.update', 'org.delete', 'org.transfer']
 

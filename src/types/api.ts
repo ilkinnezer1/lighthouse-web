@@ -160,6 +160,33 @@ export interface VolumeConfig {
   path: string
 }
 
+export type NotificationKind = 'SLACK' | 'DISCORD' | 'WEBHOOK'
+
+// The stored webhook URL is a credential and is never returned by the API.
+export interface NotificationChannel {
+  id: string
+  name: string
+  kind: NotificationKind
+  enabled: boolean
+  events: string[]
+  createdAt: string
+}
+
+export interface CreateNotificationChannelInput {
+  name: string
+  kind: NotificationKind
+  url: string
+  enabled?: boolean
+  events?: string[]
+}
+
+export interface UpdateNotificationChannelInput {
+  name?: string
+  url?: string
+  enabled?: boolean
+  events?: string[]
+}
+
 // A volume as it actually exists in Docker. sizeBytes is -1 when Docker could
 // not report a size, so the UI shows "unknown" rather than a misleading 0.
 export interface VolumeInfo {
