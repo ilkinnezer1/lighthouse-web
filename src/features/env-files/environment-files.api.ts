@@ -21,9 +21,11 @@ export async function deleteEnvironmentFile(envId: string, path: string) {
 }
 
 export async function getFileTree(envId: string) {
-  const { data } = await api.get<{ entries: ProjectFileEntry[]; truncated?: boolean }>(
-    `/environments/${envId}/files/tree`,
-  )
+  const { data } = await api.get<{
+    entries: ProjectFileEntry[]
+    truncated?: boolean
+    noSource?: boolean
+  }>(`/environments/${envId}/files/tree`)
   return data
 }
 

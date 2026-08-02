@@ -141,6 +141,20 @@ async function onCreate() {
     <p v-else-if="isError" class="mt-3 text-sm text-destructive">Could not load files.</p>
 
     <div
+      v-else-if="tree?.noSource"
+      class="mt-3 rounded-xl border border-dashed border-border py-12 text-center"
+    >
+      <FolderTree class="mx-auto size-5 text-muted-foreground" />
+      <p class="mt-2 text-sm text-muted-foreground">
+        This deployment has no source to browse.
+      </p>
+      <p class="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+        Prebuilt-image deploys skip the clone entirely, and an older deploy's files may have
+        been cleaned up.
+      </p>
+    </div>
+
+    <div
       v-else-if="isEmpty"
       class="mt-3 rounded-xl border border-dashed border-border py-12 text-center"
     >
