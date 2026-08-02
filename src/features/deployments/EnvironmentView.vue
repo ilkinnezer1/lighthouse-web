@@ -10,9 +10,11 @@ import { useDatabases } from '@/features/databases/databases.queries'
 import StatusBadge from '@/features/databases/StatusBadge.vue'
 import { databaseTone, titleCase } from '@/features/databases/databases.status'
 import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
+import ResetEnvironmentButton from '@/features/databases/ResetEnvironmentButton.vue'
 import EnvVarsSection from '@/features/env-vars/EnvVarsSection.vue'
 import EnvFilesSection from '@/features/env-files/EnvFilesSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
+import ScheduledTasksSection from '@/features/scheduled-tasks/ScheduledTasksSection.vue'
 import { useCan } from '@/features/orgs/useCan'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
@@ -56,6 +58,14 @@ const showDeploy = ref(false)
 function onDeployed(dep: Deployment) {
   router.push(`/deployments/${dep.id}`)
 }
+
+// Service names for the task picker, taken from the newest deployment we know about.
+const serviceNames = computed(() => {
+  const names = (deployments.value ?? [])
+    .flatMap((d) => d.services ?? [])
+    .map((s) => s.name)
+  return names.length ? [...new Set(names)] : ['web']
+})
 
 const canDeploy = useCan('deploy')
 const canManageEnv = useCan('env.manage')
@@ -123,6 +133,8 @@ const canManageEnv = useCan('env.manage')
       </div>
     </section>
 
+    <ScheduledTasksSection :env-id="envId" :services="serviceNames" class="mt-10 block" />
+
     <EnvVarsSection :env-id="envId" class="mt-10 block" />
 
     <EnvFilesSection :env-id="envId" class="mt-10 block" />
@@ -133,6 +145,7 @@ const canManageEnv = useCan('env.manage')
     <section class="mt-10">
       <SectionHead eyebrow="Databases" :count="databases?.length ?? 0">
         <template #actions>
+          <ResetEnvironmentButton :env-id="envId" :database-count="databases?.length ?? 0" />
           <Button
             v-if="canManageEnv"
             size="sm"

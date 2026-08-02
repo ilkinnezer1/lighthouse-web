@@ -4,7 +4,9 @@ import {
   createSnapshot,
   deleteSnapshot,
   listSnapshots,
+  resetEnvironment,
   restoreSnapshot,
+  updateSnapshot,
 } from './snapshots.api'
 import { isSnapshotPending } from './databases.status'
 import { databaseKeys } from './databases.queries'
@@ -58,5 +60,24 @@ export function useDeleteSnapshot(databaseId: MaybeRefOrGetter<string>) {
     mutationFn: (id: string) => deleteSnapshot(id),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: snapshotKeys.byDatabase(toValue(databaseId)) }),
+  })
+}
+
+export function useUpdateSnapshot(databaseId: MaybeRefOrGetter<string>) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: { id: string; input: { label?: string; isBaseline?: boolean } }) =>
+      updateSnapshot(vars.id, vars.input),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: snapshotKeys.byDatabase(toValue(databaseId)) }),
+  })
+}
+
+export function useResetEnvironment(envId: MaybeRefOrGetter<string>) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => resetEnvironment(toValue(envId)),
+    // A reset rewrites every database in the environment.
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['databases'] }),
   })
 }

@@ -341,7 +341,15 @@ export interface DatabaseSnapshot {
   storageKey: string | null
   sizeBytes: string | null
   errorSummary: string | null
+  label: string | null
+  // The state `POST /environments/:id/reset` returns this database to.
+  isBaseline: boolean
   createdAt: string
+}
+
+export interface EnvironmentResetResult {
+  restored: { database: string; snapshotId: string }[]
+  skipped: { database: string; reason: string }[]
 }
 
 export interface DatabaseListItem {
@@ -539,4 +547,77 @@ export interface MaintenanceActionDef {
 export interface OutboxEvent<T = Record<string, unknown>> {
   id: string
   payload: T
+}
+
+// ── scheduled tasks ─────────────────────────────────────────────────────────
+export type TaskOverlapPolicy = 'SKIP' | 'QUEUE'
+export type TaskRunStatus = 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED'
+export type TaskRunTrigger = 'SCHEDULE' | 'MANUAL'
+
+export interface TaskRun {
+  id: string
+  taskId: string
+  deploymentId: string | null
+  status: TaskRunStatus
+  trigger: TaskRunTrigger
+  exitCode: number | null
+  output: string | null
+  errorSummary: string | null
+  startedAt: string
+  finishedAt: string | null
+}
+
+export interface ScheduledTask {
+  id: string
+  environmentId: string
+  name: string
+  service: string
+  command: string
+  schedule: string
+  timezone: string
+  enabled: boolean
+  timeoutSec: number
+  overlap: TaskOverlapPolicy
+  lastRunAt: string | null
+  nextRunAt: string | null
+  createdAt: string
+  updatedAt: string
+  // Only the most recent run, included on the list endpoint.
+  runs?: Pick<
+    TaskRun,
+    'id' | 'status' | 'exitCode' | 'startedAt' | 'finishedAt' | 'errorSummary'
+  >[]
+}
+
+export interface CreateScheduledTaskInput {
+  name: string
+  service: string
+  command: string
+  schedule: string
+  timezone?: string
+  enabled?: boolean
+  timeoutSec?: number
+  overlap?: TaskOverlapPolicy
+}
+
+export type UpdateScheduledTaskInput = Partial<CreateScheduledTaskInput>
+
+export interface TaskRunOutcome {
+  runId: string
+  status: 'SUCCEEDED' | 'FAILED' | 'SKIPPED'
+  exitCode: number | null
+}
+
+export interface ScheduledTaskListItem extends ScheduledTask {
+  environment: {
+    id: string
+    name: string
+    project: { id: string; name: string }
+  }
+}
+
+export interface ListScheduledTasksParams {
+  projectId?: string
+  enabled?: boolean
+  orgId?: string
 }
