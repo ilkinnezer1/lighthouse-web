@@ -685,3 +685,42 @@ export interface ListScheduledTasksParams {
   enabled?: boolean
   orgId?: string
 }
+
+export interface TemplateEnvField {
+  key: string
+  label: string
+  description?: string
+  default?: string
+  required?: boolean
+  secret?: boolean
+}
+
+export interface TemplateSummary {
+  slug: string
+  name: string
+  description: string
+  category: string
+  website?: string
+  image: string
+  port: number
+  volumeCount: number
+  promptedEnv: TemplateEnvField[]
+  generatedEnvCount: number
+  postInstall?: string
+}
+
+export interface InstantiateTemplateInput {
+  name?: string
+  organizationId?: string
+  subdomain?: string
+  env?: Record<string, string>
+  deploy?: boolean
+}
+
+export interface InstantiateTemplateResult {
+  project: Project
+  environmentId: string
+  url: string
+  deploymentId: string | null
+  postInstall?: string
+}

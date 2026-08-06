@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Database, FolderGit2, Plug, Rocket, ScrollText, Search, Timer } from '@lucide/vue'
+import { Database, FolderGit2, Plug, Rocket, ScrollText, Search, Sparkles, Timer } from '@lucide/vue'
 import { useProjects } from '@/features/projects/projects.queries'
 import { useCan } from '@/features/orgs/useCan'
 
@@ -22,6 +22,7 @@ const pages = computed<Item[]>(() => {
   const base: Item[] = [
     { id: 'p:projects', label: 'Projects', icon: FolderGit2, to: '/' },
     { id: 'p:deployments', label: 'Deployments', icon: Rocket, to: '/deployments' },
+    { id: 'p:templates', label: 'Templates', icon: Sparkles, to: '/templates' },
     { id: 'p:tasks', label: 'Scheduled tasks', icon: Timer, to: '/scheduled-tasks' },
     { id: 'p:databases', label: 'Databases', icon: Database, to: '/databases' },
     { id: 'p:integrations', label: 'Integrations', icon: Plug, to: '/integrations' },

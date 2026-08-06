@@ -10,6 +10,7 @@ import {
   Plug,
   Rocket,
   ScrollText,
+  Sparkles,
   Timer,
   Search,
   Sun,
@@ -64,6 +65,7 @@ const navActive = 'text-ink-1! before:bg-primary! before:h-5!'
 const nav = [
   { to: '/', label: 'Projects', icon: FolderGit2, exact: true },
   { to: '/deployments', label: 'Deployments', icon: Rocket, exact: false },
+  { to: '/templates', label: 'Templates', icon: Sparkles, exact: false },
   { to: '/scheduled-tasks', label: 'Scheduled tasks', icon: Timer, exact: false },
   { to: '/databases', label: 'Databases', icon: Database, exact: false },
   { to: '/integrations', label: 'Integrations', icon: Plug, exact: false },
