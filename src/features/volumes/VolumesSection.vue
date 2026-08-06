@@ -4,6 +4,7 @@ import { HardDrive, LoaderCircle, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useDeleteVolume, useVolumes } from './volumes.queries'
 import { apiErrorMessage } from '@/lib/api'
+import { formatBytes } from './format'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -24,19 +25,6 @@ const { data: volumes, isPending, isError } = useVolumes(() => props.envId)
 const del = useDeleteVolume(() => props.envId)
 
 const deleting = ref<string | null>(null)
-
-function formatSize(bytes: number): string {
-  if (bytes < 0) return 'size unknown'
-  if (bytes < 1024) return `${bytes} B`
-  const units = ['KB', 'MB', 'GB', 'TB']
-  let value = bytes / 1024
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`
-}
 
 async function onDelete(name: string) {
   deleting.value = name
@@ -88,7 +76,7 @@ async function onDelete(name: string) {
           <div class="truncate font-mono text-xs text-muted-foreground">{{ v.volume }}</div>
         </div>
         <span class="shrink-0 font-mono text-xs text-muted-foreground">
-          {{ formatSize(v.sizeBytes) }}
+          {{ formatBytes(v.sizeBytes) }}
         </span>
         <span
           v-if="v.inUse"

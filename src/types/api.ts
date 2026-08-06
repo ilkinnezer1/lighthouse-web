@@ -739,3 +739,17 @@ export interface DomainCheck {
   expected: string[]
   note?: string
 }
+
+export type VolumeBackupStatus = 'PENDING' | 'READY' | 'FAILED'
+
+export interface VolumeBackup {
+  id: string
+  environmentId: string
+  volumeName: string
+  status: VolumeBackupStatus
+  sizeBytes: number | null
+  errorSummary: string | null
+  label: string | null
+  createdAt: string
+  completedAt: string | null
+}

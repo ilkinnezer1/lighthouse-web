@@ -14,6 +14,7 @@ import ResetEnvironmentButton from '@/features/databases/ResetEnvironmentButton.
 import EnvVarsSection from '@/features/env-vars/EnvVarsSection.vue'
 import EnvFilesSection from '@/features/env-files/EnvFilesSection.vue'
 import VolumesSection from '@/features/volumes/VolumesSection.vue'
+import VolumeBackupsSection from '@/features/volumes/VolumeBackupsSection.vue'
 import DomainSection from '@/features/domains/DomainSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
 import ScheduledTasksSection from '@/features/scheduled-tasks/ScheduledTasksSection.vue'
@@ -142,6 +143,8 @@ const canManageEnv = useCan('env.manage')
     <EnvVarsSection :env-id="envId" class="mt-10 block" />
 
     <VolumesSection :env-id="envId" class="mt-10 block" />
+
+    <VolumeBackupsSection :env-id="envId" class="mt-10 block" />
 
     <EnvFilesSection :env-id="envId" class="mt-10 block" />
 
