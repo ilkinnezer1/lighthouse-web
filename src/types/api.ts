@@ -724,3 +724,18 @@ export interface InstantiateTemplateResult {
   deploymentId: string | null
   postInstall?: string
 }
+
+export interface DomainStatus {
+  customDomain: string | null
+  target: string | null
+  mode: 'local' | 'server'
+}
+
+export interface DomainCheck {
+  domain: string
+  resolves: boolean
+  matches: boolean
+  found: string[]
+  expected: string[]
+  note?: string
+}
