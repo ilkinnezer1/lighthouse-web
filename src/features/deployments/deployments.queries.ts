@@ -57,6 +57,7 @@ export function useDeploymentsFeed(filters: {
       }),
     refetchInterval: (items) =>
       items.some((d) => !isTerminalStatus(d.status)) ? 4000 : false,
+    refetchIntervalInBackground: true,
   })
 }
 
@@ -66,6 +67,7 @@ export function useDeployments(envId: MaybeRefOrGetter<string>) {
     queryFn: () => listDeployments(toValue(envId)),
     refetchInterval: (query) =>
       query.state.data?.some((d) => !isTerminalStatus(d.status)) ? 4000 : false,
+    refetchIntervalInBackground: true,
   })
 }
 
@@ -78,6 +80,7 @@ export function useDeployment(id: MaybeRefOrGetter<string>) {
       const status = query.state.data?.status
       return status && isTerminalStatus(status) ? false : 4000
     },
+    refetchIntervalInBackground: true,
   })
 }
 

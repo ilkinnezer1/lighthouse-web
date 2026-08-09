@@ -29,6 +29,7 @@ export function useProjectStatuses() {
     // Keep polling only while something is still moving.
     refetchInterval: (q) =>
       (q.state.data?.items ?? []).some((d) => !isTerminalStatus(d.status)) ? 5_000 : false,
+    refetchIntervalInBackground: true,
   })
 
   const byProject = computed(() => {

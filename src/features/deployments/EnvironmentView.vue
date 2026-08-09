@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ChevronRight, Plus, Rocket } from '@lucide/vue'
 import { useProject } from '@/features/projects/projects.queries'
 import { useDeployments } from './deployments.queries'
@@ -8,13 +8,14 @@ import DeploymentRow from './DeploymentRow.vue'
 import DeployDialog from './DeployDialog.vue'
 import { useDatabases } from '@/features/databases/databases.queries'
 import StatusBadge from '@/features/databases/StatusBadge.vue'
-import { databaseTone, titleCase } from '@/features/databases/databases.status'
+import { databaseDisplay } from '@/features/databases/databases.status'
 import CreateDatabaseDialog from '@/features/databases/CreateDatabaseDialog.vue'
 import ResetEnvironmentButton from '@/features/databases/ResetEnvironmentButton.vue'
 import EnvVarsSection from '@/features/env-vars/EnvVarsSection.vue'
 import EnvFilesSection from '@/features/env-files/EnvFilesSection.vue'
 import VolumesSection from '@/features/volumes/VolumesSection.vue'
 import VolumeBackupsSection from '@/features/volumes/VolumeBackupsSection.vue'
+import { useVolumeBackups } from '@/features/volumes/backups.queries'
 import DomainSection from '@/features/domains/DomainSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
 import ScheduledTasksSection from '@/features/scheduled-tasks/ScheduledTasksSection.vue'
@@ -30,10 +31,12 @@ import {
   PageHead,
   PageShell,
   SectionHead,
+  SectionTabs,
 } from '@/components/ui/section'
 
 const props = defineProps<{ projectId: string; envId: string }>()
 const router = useRouter()
+const route = useRoute()
 
 const { data: project } = useProject(() => props.projectId)
 const env = computed(() => project.value?.environments?.find((e) => e.id === props.envId))
@@ -70,8 +73,50 @@ const serviceNames = computed(() => {
   return names.length ? [...new Set(names)] : ['web']
 })
 
+// The reset button needs to know whether any volume has a baseline: an
+// environment can hold all its state in volumes and no databases at all.
+const { data: volumeBackups } = useVolumeBackups(() => props.envId)
+const volumeBaselineCount = computed(
+  () => (volumeBackups.value ?? []).filter((b) => b.isBaseline).length,
+)
+
 const canDeploy = useCan('deploy')
 const canManageEnv = useCan('env.manage')
+
+/**
+ * The page was one scroll of nine sections with databases and "Reset data" last,
+ * below the file tree — the two things anyone testing an environment reaches for
+ * most, behind the heaviest thing on the page. Grouping puts them one click away
+ * and keeps the tree from separating them from everything else.
+ */
+const TABS = [
+  { key: 'deployments', label: 'Deployments' },
+  { key: 'data', label: 'Data' },
+  { key: 'config', label: 'Config' },
+  { key: 'files', label: 'Files' },
+]
+
+// Kept in the query string so a tab is linkable and survives a reload.
+const tab = computed({
+  get: () => {
+    const q = route.query.tab
+    const key = Array.isArray(q) ? q[0] : q
+    return TABS.some((t) => t.key === key) ? (key as string) : 'deployments'
+  },
+  // replace, not push: flipping tabs is not navigation worth stacking in
+  // history, and back should leave the page rather than walk the tabs.
+  set: (key: string) => void router.replace({ query: { ...route.query, tab: key } }),
+})
+
+const tabsWithCounts = computed(() =>
+  TABS.map((t) =>
+    t.key === 'deployments'
+      ? { ...t, count: deployments.value?.length ?? null }
+      : t.key === 'data'
+        ? { ...t, count: databases.value?.length ?? null }
+        : t,
+  ),
+)
 </script>
 
 <template>
@@ -97,9 +142,10 @@ const canManageEnv = useCan('env.manage')
       </template>
     </PageHead>
 
-    <section class="mt-12">
-      <SectionHead eyebrow="Deployments" :count="deployments?.length ?? 0" />
+    <SectionTabs v-model="tab" :tabs="tabsWithCounts" class="mt-10" />
 
+    <!-- No section head: the tab already carries this label and count. -->
+    <section v-if="tab === 'deployments'" class="mt-6">
       <LoadingRows v-if="isPending" :rows="4" />
 
       <ErrorState
@@ -136,25 +182,29 @@ const canManageEnv = useCan('env.manage')
       </div>
     </section>
 
-    <DomainSection :env-id="envId" class="mt-10 block" />
+    <template v-if="tab === 'config'">
+      <DomainSection :env-id="envId" class="mt-8 block" />
 
-    <ScheduledTasksSection :env-id="envId" :services="serviceNames" class="mt-10 block" />
+      <EnvVarsSection :env-id="envId" class="mt-10 block" />
 
-    <EnvVarsSection :env-id="envId" class="mt-10 block" />
+      <ScheduledTasksSection :env-id="envId" :services="serviceNames" class="mt-10 block" />
+    </template>
 
-    <VolumesSection :env-id="envId" class="mt-10 block" />
+    <template v-if="tab === 'files'">
+      <EnvFilesSection :env-id="envId" class="mt-8 block" />
 
-    <VolumeBackupsSection :env-id="envId" class="mt-10 block" />
+      <FileExplorerSection :env-id="envId" class="mt-10 block" />
+    </template>
 
-    <EnvFilesSection :env-id="envId" class="mt-10 block" />
-
-    <FileExplorerSection :env-id="envId" class="mt-10 block" />
-
-    <!-- databases -->
-    <section class="mt-10">
+    <!-- databases lead the Data tab: resetting an environment starts here -->
+    <section v-if="tab === 'data'" class="mt-8">
       <SectionHead eyebrow="Databases" :count="databases?.length ?? 0">
         <template #actions>
-          <ResetEnvironmentButton :env-id="envId" :database-count="databases?.length ?? 0" />
+          <ResetEnvironmentButton
+            :env-id="envId"
+            :database-count="databases?.length ?? 0"
+            :volume-baseline-count="volumeBaselineCount"
+          />
           <Button
             v-if="canManageEnv"
             size="sm"
@@ -202,18 +252,30 @@ const canManageEnv = useCan('env.manage')
           :to="`/projects/${projectId}/env/${envId}/databases/${db.id}`"
           class="flex items-center gap-3 py-3 transition-colors hover:bg-accent/40"
         >
-          <StatusBadge :tone="databaseTone[db.status]" :label="titleCase(db.status)" />
+          <StatusBadge
+            :tone="databaseDisplay(db).tone"
+            :label="databaseDisplay(db).label"
+          />
           <div class="min-w-0 flex-1">
             <p class="truncate font-mono text-sm text-ink-1">{{ db.name }}</p>
             <p class="mt-0.5 truncate text-xs text-ink-4">
               {{ db.type }} {{ db.version }}
               <span v-if="!db.ownsContainer"> · attached</span>
+              <span v-else-if="db.containerRunning === false" class="text-ink-3">
+                · container not running
+              </span>
             </p>
           </div>
           <ChevronRight class="size-4 text-ink-4" />
         </RouterLink>
       </div>
     </section>
+
+    <template v-if="tab === 'data'">
+      <VolumesSection :env-id="envId" class="mt-10 block" />
+
+      <VolumeBackupsSection :env-id="envId" class="mt-10 block" />
+    </template>
 
     <CreateDatabaseDialog
       v-if="project"

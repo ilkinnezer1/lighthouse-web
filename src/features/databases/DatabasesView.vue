@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { RotateCcw } from '@lucide/vue'
 import { useDatabasesFeed } from './databases.queries'
-import { databaseTone, titleCase } from './databases.status'
+import { databaseDisplay, titleCase } from './databases.status'
 import StatusBadge from './StatusBadge.vue'
 import { useProjects } from '@/features/projects/projects.queries'
 import { useSelectFilter } from '@/lib/feed'
@@ -149,7 +149,7 @@ function goToDatabase(d: DatabaseListItem) {
             class="flex w-full items-center gap-4 py-4 text-left transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
             @click="goToDatabase(d)"
           >
-            <StatusBadge :tone="databaseTone[d.status]" :label="titleCase(d.status)" />
+            <StatusBadge :tone="databaseDisplay(d).tone" :label="databaseDisplay(d).label" />
 
             <span class="min-w-0 shrink-0 basis-56">
               <span class="block truncate font-mono text-sm text-ink-1">{{ d.name }}</span>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Archive, LoaderCircle, RotateCcw, Trash2 } from '@lucide/vue'
+import { Anchor, Archive, LoaderCircle, RotateCcw, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import {
   useCreateVolumeBackup,
   useDeleteVolumeBackup,
   useRestoreVolumeBackup,
+  useUpdateVolumeBackup,
   useVolumeBackups,
 } from './backups.queries'
 import { useVolumes } from './volumes.queries'
@@ -45,6 +46,7 @@ const { data: volumes } = useVolumes(() => props.envId)
 const create = useCreateVolumeBackup(() => props.envId)
 const restore = useRestoreVolumeBackup(() => props.envId)
 const del = useDeleteVolumeBackup(() => props.envId)
+const markBaseline = useUpdateVolumeBackup(() => props.envId)
 const canManage = useCan('env.manage')
 
 // Only volumes that actually exist can be backed up; the API rejects the rest.
@@ -54,6 +56,19 @@ const target = computed({
   get: () => selected.value || names.value[0] || '',
   set: (v: string) => (selected.value = v),
 })
+
+async function onSetBaseline(b: VolumeBackup) {
+  try {
+    await markBaseline.mutateAsync({ id: b.id, input: { isBaseline: !b.isBaseline } })
+    toast.success(
+      b.isBaseline
+        ? `"${b.volumeName}" no longer resets to this backup`
+        : `"${b.volumeName}" now resets to this backup`,
+    )
+  } catch (e) {
+    toast.error(apiErrorMessage(e))
+  }
+}
 
 const tone: Record<VolumeBackupStatus, StatusTone> = {
   PENDING: 'active',
@@ -161,7 +176,15 @@ async function onDelete(b: VolumeBackup) {
         <SignalDot :tone="tone[b.status]" :title="b.status.toLowerCase()" />
 
         <div class="min-w-0 flex-1">
-          <div class="truncate font-mono text-sm text-foreground">{{ b.volumeName }}</div>
+          <div class="flex items-center gap-2">
+            <span class="truncate font-mono text-sm text-foreground">{{ b.volumeName }}</span>
+            <span
+              v-if="b.isBaseline"
+              class="shrink-0 rounded-full bg-primary/12 px-2 py-0.5 font-mono text-[10px] font-medium text-primary"
+            >
+              baseline
+            </span>
+          </div>
           <div class="truncate text-xs text-muted-foreground">
             {{ relativeTime(b.createdAt) }}
             <template v-if="b.status === 'READY' && b.sizeBytes !== null">
@@ -171,6 +194,18 @@ async function onDelete(b: VolumeBackup) {
             <template v-else-if="b.errorSummary">· {{ b.errorSummary }}</template>
           </div>
         </div>
+
+        <!-- baseline: the state "Reset data" returns this volume to -->
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          :title="b.isBaseline ? 'This is the reset point' : 'Make this the reset point'"
+          :aria-pressed="b.isBaseline"
+          :disabled="!canManage || b.status !== 'READY' || markBaseline.isPending.value"
+          @click="onSetBaseline(b)"
+        >
+          <Anchor :class="b.isBaseline ? 'text-primary' : 'opacity-50'" />
+        </Button>
 
         <AlertDialog>
           <AlertDialogTrigger as-child>

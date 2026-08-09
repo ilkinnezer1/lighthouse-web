@@ -12,7 +12,11 @@ initTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 },
+    // Refetch on focus: this is a console people watch while working in another
+    // window, and coming back to state captured minutes ago reads as a hung UI.
+    // staleTime keeps that from being a stampede — only genuinely old data is
+    // refetched when the window regains focus.
+    queries: { retry: 1, refetchOnWindowFocus: true, staleTime: 30_000 },
   },
 })
 

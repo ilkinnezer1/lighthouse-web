@@ -1,5 +1,6 @@
 export { default as PageHead } from './PageHead.vue'
 export { default as SectionHead } from './SectionHead.vue'
+export { default as SectionTabs } from './SectionTabs.vue'
 export { default as SignalDot } from './SignalDot.vue'
 export { default as EmptyState } from './EmptyState.vue'
 export { default as ErrorState } from './ErrorState.vue'

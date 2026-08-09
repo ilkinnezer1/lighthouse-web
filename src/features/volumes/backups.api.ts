@@ -18,6 +18,14 @@ export async function restoreVolumeBackup(backupId: string) {
   await api.post(`/volume-backups/${backupId}/restore`)
 }
 
+export async function updateVolumeBackup(
+  backupId: string,
+  input: { label?: string; isBaseline?: boolean },
+) {
+  const { data } = await api.patch<VolumeBackup>(`/volume-backups/${backupId}`, input)
+  return data
+}
+
 export async function deleteVolumeBackup(backupId: string) {
   await api.delete(`/volume-backups/${backupId}`)
 }

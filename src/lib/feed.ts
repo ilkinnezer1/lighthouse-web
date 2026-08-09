@@ -12,6 +12,9 @@ export function useCursorFeed<T>(opts: {
   queryKey: MaybeRefOrGetter<readonly unknown[]>
   fetchPage: (cursor: string | undefined) => Promise<{ items: T[]; nextCursor: string | null }>
   refetchInterval?: (items: T[]) => number | false
+  // Only for feeds whose interval stops itself once nothing is in flight —
+  // otherwise a hidden tab would poll forever.
+  refetchIntervalInBackground?: boolean
 }) {
   const query = useInfiniteQuery({
     queryKey: computed(() => toValue(opts.queryKey)),
@@ -22,6 +25,7 @@ export function useCursorFeed<T>(opts: {
       ? (q) =>
           opts.refetchInterval!(q.state.data?.pages.flatMap((p) => p.items) ?? [])
       : undefined,
+    refetchIntervalInBackground: opts.refetchIntervalInBackground,
   })
   const items = computed(() => query.data.value?.pages.flatMap((p) => p.items) ?? [])
   return Object.assign(query, { items })

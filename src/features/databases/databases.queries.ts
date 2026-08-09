@@ -49,6 +49,7 @@ export function useDatabasesFeed(filters: {
       }),
     refetchInterval: (items) =>
       items.some((d) => isDatabasePending(d.status)) ? 4000 : false,
+    refetchIntervalInBackground: true,
   })
 }
 
@@ -59,6 +60,7 @@ export function useDatabases(envId: MaybeRefOrGetter<string>) {
     // Poll while any database is still provisioning (worker writes back async).
     refetchInterval: (query) =>
       query.state.data?.some((db) => isDatabasePending(db.status)) ? 4000 : false,
+    refetchIntervalInBackground: true,
   })
 }
 
@@ -87,6 +89,7 @@ export function useDatabase(id: MaybeRefOrGetter<string>) {
       const status = query.state.data?.status
       return status && isDatabasePending(status) ? 4000 : false
     },
+    refetchIntervalInBackground: true,
   })
 }
 

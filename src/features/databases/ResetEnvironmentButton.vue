@@ -18,7 +18,17 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
-const props = defineProps<{ envId: string; databaseCount: number }>()
+const props = defineProps<{
+  envId: string
+  databaseCount: number
+  volumeBaselineCount?: number
+}>()
+
+// Show the button when there is anything to reset. Gating on databases alone
+// hid it from environments whose state lives entirely in volumes.
+const hasTargets = computed(
+  () => props.databaseCount > 0 || (props.volumeBaselineCount ?? 0) > 0,
+)
 
 const reset = useResetEnvironment(() => props.envId)
 // Client gating is cosmetic; the API enforces snapshots.restore.
@@ -28,22 +38,28 @@ const busy = computed(() => reset.isPending.value)
 async function onReset() {
   try {
     const res = await reset.mutateAsync()
-    if (res.restored.length === 0) {
+    const restored = [
+      ...res.restored.map((r) => r.database),
+      ...(res.volumesRestored ?? []).map((v) => v.volume),
+    ]
+    const skipped = [
+      ...res.skipped.map((s) => `${s.database} (${s.reason})`),
+      ...(res.volumesSkipped ?? []).map((v) => `${v.volume} (${v.reason})`),
+    ]
+
+    if (restored.length === 0) {
       // A reset that restored nothing is a failure to communicate, not a success.
       toast.error(
-        res.skipped.length
-          ? `Nothing reset — ${res.skipped.map((s) => `${s.database}: ${s.reason}`).join('; ')}`
-          : 'Nothing to reset — this environment has no databases',
+        skipped.length
+          ? `Nothing reset — ${skipped.join('; ')}`
+          : 'Nothing to reset — nothing here has a baseline yet',
       )
       return
     }
-    const names = res.restored.map((r) => r.database).join(', ')
-    if (res.skipped.length) {
-      toast.warning(
-        `Restoring ${names}. Skipped ${res.skipped.map((s) => `${s.database} (${s.reason})`).join(', ')}`,
-      )
+    if (skipped.length) {
+      toast.warning(`Restoring ${restored.join(', ')}. Skipped ${skipped.join(', ')}`)
     } else {
-      toast.success(`Restoring ${names} to baseline`)
+      toast.success(`Restoring ${restored.join(', ')} to baseline`)
     }
   } catch (e) {
     toast.error(apiErrorMessage(e, 'Could not reset the environment'))
@@ -52,7 +68,7 @@ async function onReset() {
 </script>
 
 <template>
-  <AlertDialog v-if="canReset && databaseCount > 0">
+  <AlertDialog v-if="canReset && hasTargets">
     <AlertDialogTrigger as-child>
       <Button variant="outline" size="sm" :disabled="busy">
         <LoaderCircle v-if="busy" class="animate-spin" />
@@ -64,9 +80,13 @@ async function onReset() {
       <AlertDialogHeader>
         <AlertDialogTitle>Reset this environment's data?</AlertDialogTitle>
         <AlertDialogDescription>
-          Every database here is restored to its baseline snapshot. Anything
+          Every database and volume here is restored to its baseline. Anything
           written since — test accounts, uploads, order history — is discarded.
-          Databases without a baseline are left untouched.
+          Anything without a baseline is left untouched, and reported back.
+          <template v-if="(volumeBaselineCount ?? 0) > 0">
+            Restoring a volume restarts whatever is using it, so the app is
+            briefly unavailable.
+          </template>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>

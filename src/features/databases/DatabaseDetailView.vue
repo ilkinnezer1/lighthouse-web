@@ -22,7 +22,7 @@ import {
   useUpdateSnapshot,
 } from './snapshots.queries'
 import StatusBadge from './StatusBadge.vue'
-import { databaseTone, snapshotTone, titleCase } from './databases.status'
+import { databaseDisplay, snapshotTone, titleCase } from './databases.status'
 import type { DatabaseSnapshot } from '@/types/api'
 import { relativeTime } from '@/lib/time'
 import { formatBytes } from '@/lib/utils'
@@ -47,7 +47,15 @@ const router = useRouter()
 const { data: db, isPending, isError, error, refetch } = useDatabase(() => props.databaseId)
 const deleteDatabase = useDeleteDatabase()
 
-const isReady = computed(() => db.value?.status === 'READY')
+const display = computed(() =>
+  db.value ? databaseDisplay(db.value) : { tone: 'neutral' as const, label: '' },
+)
+
+// A stopped container can't be dumped, so "Ready" alone is not enough to offer a
+// snapshot — the job would be queued only to fail in the worker.
+const isReady = computed(
+  () => db.value?.status === 'READY' && db.value?.containerRunning !== false,
+)
 
 // Redis loads its AOF on start and would ignore a restored RDB, so the server
 // has to be stopped while its data directory is rewritten.
@@ -165,7 +173,7 @@ async function onDeleteSnapshot(id: string) {
           <h1 class="font-mono text-2xl font-semibold tracking-tight text-foreground">
             {{ db.name }}
           </h1>
-          <StatusBadge :tone="databaseTone[db.status]" :label="titleCase(db.status)" />
+          <StatusBadge :tone="display.tone" :label="display.label" />
         </div>
 
         <AlertDialog>
@@ -260,7 +268,13 @@ async function onDeleteSnapshot(id: string) {
             size="sm"
             variant="outline"
             :disabled="!isReady || createSnapshot.isPending.value"
-            :title="isReady ? undefined : 'Database must be ready'"
+            :title="
+              isReady
+                ? undefined
+                : db.containerRunning === false
+                  ? 'The container is not running — start it to take a snapshot'
+                  : 'Database must be ready'
+            "
             @click="onCreateSnapshot"
           >
             <LoaderCircle v-if="createSnapshot.isPending.value" class="animate-spin" />

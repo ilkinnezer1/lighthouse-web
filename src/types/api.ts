@@ -390,6 +390,10 @@ export interface ManagedDatabase {
   version: string
   name: string
   status: DatabaseStatus
+  // Whether the container is actually running right now, as opposed to `status`,
+  // which only records how provisioning ended. null = not known (worker
+  // unreachable, or an attached database with no container of ours).
+  containerRunning: boolean | null
   ownsContainer: boolean
   host: string | null
   port: number | null
@@ -417,6 +421,8 @@ export interface DatabaseSnapshot {
 export interface EnvironmentResetResult {
   restored: { database: string; snapshotId: string }[]
   skipped: { database: string; reason: string }[]
+  volumesRestored: { volume: string; backupId: string }[]
+  volumesSkipped: { volume: string; reason: string }[]
 }
 
 export interface DatabaseListItem {
@@ -754,6 +760,8 @@ export interface VolumeBackup {
   errorSummary: string | null
   label: string | null
   automatic: boolean
+  // The state "Reset data" returns this volume to.
+  isBaseline: boolean
   createdAt: string
   completedAt: string | null
 }

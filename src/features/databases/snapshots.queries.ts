@@ -30,6 +30,7 @@ export function useSnapshots(
     // Poll while any snapshot is still being captured (worker dump → MinIO).
     refetchInterval: (query) =>
       query.state.data?.some((s) => isSnapshotPending(s.status)) ? 4000 : false,
+    refetchIntervalInBackground: true,
   })
 }
 
