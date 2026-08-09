@@ -408,6 +408,9 @@ export interface DatabaseSnapshot {
   label: string | null
   // The state `POST /environments/:id/reset` returns this database to.
   isBaseline: boolean
+  // Taken by a BackupSchedule rather than a person. Only these are pruned by
+  // retention.
+  automatic: boolean
   createdAt: string
 }
 
@@ -750,6 +753,41 @@ export interface VolumeBackup {
   sizeBytes: number | null
   errorSummary: string | null
   label: string | null
+  automatic: boolean
   createdAt: string
   completedAt: string | null
+}
+
+export type BackupTargetKind = 'DATABASE' | 'VOLUME'
+
+export interface BackupSchedule {
+  id: string
+  kind: BackupTargetKind
+  environmentId: string
+  databaseId: string | null
+  volumeName: string | null
+  schedule: string
+  timezone: string
+  enabled: boolean
+  keepLast: number
+  lastRunAt: string | null
+  nextRunAt: string | null
+  createdAt: string
+}
+
+export interface CreateBackupScheduleInput {
+  kind: BackupTargetKind
+  databaseId?: string
+  volumeName?: string
+  schedule: string
+  timezone?: string
+  keepLast?: number
+  enabled?: boolean
+}
+
+export interface UpdateBackupScheduleInput {
+  schedule?: string
+  timezone?: string
+  keepLast?: number
+  enabled?: boolean
 }

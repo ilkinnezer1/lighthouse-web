@@ -9,6 +9,7 @@ import {
   useVolumeBackups,
 } from './backups.queries'
 import { useVolumes } from './volumes.queries'
+import BackupScheduleControl from '@/features/backup-schedules/BackupScheduleControl.vue'
 import { useCan } from '@/features/orgs/useCan'
 import { apiErrorMessage } from '@/lib/api'
 import { formatBytes } from './format'
@@ -132,6 +133,14 @@ async function onDelete(b: VolumeBackup) {
         Back up now
       </Button>
     </div>
+
+    <BackupScheduleControl
+      v-if="target"
+      :key="target"
+      :env-id="props.envId"
+      kind="VOLUME"
+      :volume-name="target"
+    />
 
     <div v-if="isPending" class="mt-3 space-y-2">
       <Skeleton v-for="n in 2" :key="n" class="h-12 w-full rounded-lg" />

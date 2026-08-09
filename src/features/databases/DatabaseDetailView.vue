@@ -12,6 +12,7 @@ import {
   Undo2,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
+import BackupScheduleControl from '@/features/backup-schedules/BackupScheduleControl.vue'
 import { useDatabase, useDeleteDatabase } from './databases.queries'
 import {
   useCreateSnapshot,
@@ -46,17 +47,17 @@ const router = useRouter()
 const { data: db, isPending, isError, error, refetch } = useDatabase(() => props.databaseId)
 const deleteDatabase = useDeleteDatabase()
 
-const isPostgres = computed(() => db.value?.type === 'POSTGRES')
 const isReady = computed(() => db.value?.status === 'READY')
+
+// Redis loads its AOF on start and would ignore a restored RDB, so the server
+// has to be stopped while its data directory is rewritten.
+const restartsOnRestore = computed(() => db.value?.type === 'REDIS')
 
 const {
   data: snapshots,
   isPending: snapshotsPending,
   isError: snapshotsError,
-} = useSnapshots(
-  () => props.databaseId,
-  { enabled: isPostgres },
-)
+} = useSnapshots(() => props.databaseId)
 const createSnapshot = useCreateSnapshot(() => props.databaseId)
 const restoreSnapshot = useRestoreSnapshot(() => props.databaseId)
 const deleteSnapshot = useDeleteSnapshot(() => props.databaseId)
@@ -252,8 +253,7 @@ async function onDeleteSnapshot(id: string) {
         </div>
       </dl>
 
-      <!-- snapshots (Postgres only) -->
-      <section v-if="isPostgres" class="mt-8">
+      <section class="mt-8">
         <div class="flex items-center justify-between gap-4">
           <h2 class="text-sm font-semibold tracking-tight text-foreground">Snapshots</h2>
           <Button
@@ -268,6 +268,13 @@ async function onDeleteSnapshot(id: string) {
             Take snapshot
           </Button>
         </div>
+
+        <BackupScheduleControl
+          v-if="db.environmentId"
+          :env-id="db.environmentId"
+          kind="DATABASE"
+          :database-id="db.id"
+        />
 
         <!-- snapshots loading -->
         <div v-if="snapshotsPending" class="mt-3 space-y-2">
@@ -346,6 +353,10 @@ async function onDeleteSnapshot(id: string) {
                     This overwrites the current contents of
                     <span class="font-mono">{{ db.name }}</span> with the snapshot taken
                     {{ relativeTime(s.createdAt) }}. This cannot be undone.
+                    <template v-if="restartsOnRestore">
+                      Redis restarts to load the restored data, so the database is briefly
+                      unavailable.
+                    </template>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

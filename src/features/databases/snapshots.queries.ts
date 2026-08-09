@@ -27,7 +27,7 @@ export function useSnapshots(
         (options?.enabled === undefined ? true : toValue(options.enabled)) &&
         Boolean(toValue(databaseId)),
     ),
-    // Poll while any snapshot is still being captured (worker pg_dump → MinIO).
+    // Poll while any snapshot is still being captured (worker dump → MinIO).
     refetchInterval: (query) =>
       query.state.data?.some((s) => isSnapshotPending(s.status)) ? 4000 : false,
   })
