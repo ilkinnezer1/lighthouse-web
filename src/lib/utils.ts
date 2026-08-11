@@ -13,10 +13,15 @@ export function titleCase(s: string): string {
   return s.charAt(0) + s.slice(1).toLowerCase()
 }
 
+// Docker reports -1 when it could not size a volume; "size unknown" beats a
+// misleading 0 or a bare dash that reads as "no data". See VolumeInfo in types/api.
+const SIZE_UNKNOWN = -1
+
 // Render a byte count (API sends BigInt sizes as a decimal string) as a human size.
 export function formatBytes(bytes: string | number | null | undefined): string {
   if (bytes === null || bytes === undefined) return '—'
   const n = typeof bytes === 'string' ? Number(bytes) : bytes
+  if (n === SIZE_UNKNOWN) return 'size unknown'
   if (!Number.isFinite(n) || n < 0) return '—'
   if (n < 1024) return `${n} B`
   const units = ['KB', 'MB', 'GB', 'TB', 'PB']

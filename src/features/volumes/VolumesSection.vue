@@ -4,7 +4,7 @@ import { HardDrive, LoaderCircle, Trash2 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useDeleteVolume, useVolumes } from './volumes.queries'
 import { apiErrorMessage } from '@/lib/api'
-import { formatBytes } from './format'
+import { formatBytes } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
