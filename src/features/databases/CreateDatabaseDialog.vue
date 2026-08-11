@@ -10,12 +10,7 @@ import { useSnapshots } from './snapshots.queries'
 import { apiErrorMessage } from '@/lib/api'
 import { formatBytes } from '@/lib/utils'
 import { relativeTime } from '@/lib/time'
-import type {
-  CreateDatabaseInput,
-  CreateDatabaseMode,
-  ManagedDatabase,
-  Project,
-} from '@/types/api'
+import type { CreateDatabaseInput, CreateDatabaseMode, ManagedDatabase, Project } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -222,9 +217,7 @@ const onSubmit = handleSubmit(async (v) => {
           </FormField>
 
           <FormField v-slot="{ value, handleChange }" name="runMigrate">
-            <FormItem
-              class="flex flex-row items-start gap-3 rounded-lg border border-border p-3"
-            >
+            <FormItem class="flex flex-row items-start gap-3 rounded-lg border border-border p-3">
               <FormControl>
                 <Checkbox :model-value="value" @update:model-value="handleChange" />
               </FormControl>
@@ -294,7 +287,11 @@ const onSubmit = handleSubmit(async (v) => {
             <FormItem>
               <FormLabel>New name</FormLabel>
               <FormControl>
-                <Input placeholder="primary-copy" class="font-mono text-sm" v-bind="componentField" />
+                <Input
+                  placeholder="primary-copy"
+                  class="font-mono text-sm"
+                  v-bind="componentField"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -352,7 +349,11 @@ const onSubmit = handleSubmit(async (v) => {
             <FormItem>
               <FormLabel>New name</FormLabel>
               <FormControl>
-                <Input placeholder="from-snapshot" class="font-mono text-sm" v-bind="componentField" />
+                <Input
+                  placeholder="from-snapshot"
+                  class="font-mono text-sm"
+                  v-bind="componentField"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

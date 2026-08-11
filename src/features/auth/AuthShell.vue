@@ -26,12 +26,14 @@ defineProps<{ title: string; subtitle?: string }>()
       </header>
 
       <div class="relative z-10 max-w-md">
-        <h1 class="text-balance text-[2rem] font-semibold leading-[1.15] tracking-tight text-foreground">
+        <h1
+          class="text-balance text-[2rem] font-semibold leading-[1.15] tracking-tight text-foreground"
+        >
           Ship preview environments from a single push.
         </h1>
         <p class="mt-4 leading-relaxed text-muted-foreground">
-          Self-hosted deploys, managed databases, snapshots and live build logs —
-          your own Vercel, on your own box.
+          Self-hosted deploys, managed databases, snapshots and live build logs — your own Vercel,
+          on your own box.
         </p>
       </div>
 

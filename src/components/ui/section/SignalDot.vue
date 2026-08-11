@@ -20,10 +20,7 @@ const toneClass: Record<StatusTone, string> = {
   neutral: 'bg-signal-idle',
 }
 
-const cls = computed(() => [
-  props.size === 'sm' ? 'size-1.5' : 'size-2',
-  toneClass[props.tone],
-])
+const cls = computed(() => [props.size === 'sm' ? 'size-1.5' : 'size-2', toneClass[props.tone]])
 </script>
 
 <template>

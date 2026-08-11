@@ -86,8 +86,7 @@ export function useRuntimeLogs(
   }
 
   watch(
-    () =>
-      [toValue(deploymentId), toValue(opts.enabled), toValue(opts.service)] as const,
+    () => [toValue(deploymentId), toValue(opts.enabled), toValue(opts.service)] as const,
     ([id, enabled, service]) => {
       stop()
       if (id && enabled) void start(id, service)

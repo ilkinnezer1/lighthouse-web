@@ -35,7 +35,12 @@ const { isDark, toggle: toggleTheme } = useTheme()
 const palette = ref<InstanceType<typeof CommandPalette> | null>(null)
 const navOpen = ref(false)
 // Never leave the drawer covering the page the user just navigated to.
-watch(() => route.fullPath, () => { navOpen.value = false })
+watch(
+  () => route.fullPath,
+  () => {
+    navOpen.value = false
+  },
+)
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 

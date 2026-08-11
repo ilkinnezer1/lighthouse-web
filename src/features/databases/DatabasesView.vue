@@ -65,7 +65,9 @@ function hostOf(d: DatabaseListItem) {
 }
 
 function goToDatabase(d: DatabaseListItem) {
-  void router.push(`/projects/${d.environment.project.id}/env/${d.environment.id}/databases/${d.id}`)
+  void router.push(
+    `/projects/${d.environment.project.id}/env/${d.environment.id}/databases/${d.id}`,
+  )
 }
 </script>
 

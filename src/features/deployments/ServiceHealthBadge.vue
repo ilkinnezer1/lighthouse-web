@@ -83,7 +83,8 @@ const webOffline = computed(() => props.isWeb && resolved.value.tone === 'down')
   >
     <TriangleAlert v-if="resolved.tone !== 'ok'" class="size-3" />
     {{ resolved.label
-    }}<span v-if="resolved.restarts != null" class="opacity-80"> · restarts: {{ resolved.restarts }}</span
+    }}<span v-if="resolved.restarts != null" class="opacity-80">
+      · restarts: {{ resolved.restarts }}</span
     ><span v-if="port" class="text-muted-foreground"> · :{{ port }}</span>
   </span>
 </template>

@@ -26,11 +26,7 @@ const active = defineModel<string>({ required: true })
       :key="t.key"
       type="button"
       class="-mb-px flex shrink-0 items-baseline gap-2 border-b-2 pb-2 transition-colors"
-      :class="
-        t.key === active
-          ? 'border-primary'
-          : 'border-transparent hover:border-rule'
-      "
+      :class="t.key === active ? 'border-primary' : 'border-transparent hover:border-rule'"
       :aria-current="t.key === active ? 'page' : undefined"
       @click="active = t.key"
     >

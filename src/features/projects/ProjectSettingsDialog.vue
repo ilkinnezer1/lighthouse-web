@@ -83,9 +83,7 @@ const port = ref('')
 const cpuLimit = ref('')
 const memoryMb = ref('')
 
-const strategyHint = computed(
-  () => STRATEGIES.find((s) => s.value === strategy.value)?.hint ?? '',
-)
+const strategyHint = computed(() => STRATEGIES.find((s) => s.value === strategy.value)?.hint ?? '')
 const showSourceFields = computed(() => SOURCE_BUILD.includes(strategy.value))
 const showBuilder = computed(() => strategy.value === 'buildpacks')
 const volumeRows = ref<{ name: string; path: string }[]>([])
@@ -106,7 +104,13 @@ const dbMigrateText = ref('')
 const envRows = ref<{ key: string; value: string }[]>([])
 // Maintenance actions keep their stored id so the deployment "Run" buttons stay
 // stable across edits; new rows get an id derived from the label at save time.
-type MaintRow = { id: string; label: string; service: string; command: string; destructive: boolean }
+type MaintRow = {
+  id: string
+  label: string
+  service: string
+  command: string
+  destructive: boolean
+}
 const maintRows = ref<MaintRow[]>([])
 const composePath = ref('')
 // `advanced` reveals the per-step image/docker controls; not persisted.
@@ -214,7 +218,7 @@ function assemble(): BuildConfig {
     const service = row.service.trim()
     const command = row.command.trim()
     if (!label || !service || !command) continue
-    const base = (row.id.trim() || slugify(label)) || 'action'
+    const base = row.id.trim() || slugify(label) || 'action'
     let id = base
     for (let n = 2; usedIds.has(id); n++) id = `${base}-${n}`
     usedIds.add(id)
@@ -256,7 +260,10 @@ function assemble(): BuildConfig {
     const builder =
       builderChoice.value === 'custom' ? builderImage.value.trim() : builderChoice.value
     if (builder) bc.builder = builder
-    const buildpacks = buildpacksText.value.trim().split(/[\s,]+/).filter(Boolean)
+    const buildpacks = buildpacksText.value
+      .trim()
+      .split(/[\s,]+/)
+      .filter(Boolean)
     if (buildpacks.length) bc.buildpacks = buildpacks
   }
 
@@ -298,7 +305,8 @@ async function onSave() {
         <DialogTitle>Build settings</DialogTitle>
         <DialogDescription>
           How Lighthouse builds and runs
-          <span class="font-medium text-foreground">{{ project.name }}</span>.
+          <span class="font-medium text-foreground">{{ project.name }}</span
+          >.
         </DialogDescription>
       </DialogHeader>
 
@@ -334,7 +342,11 @@ async function onSave() {
             placeholder="nginx:1.27 or ghcr.io/acme/app:sha-abc123"
             class="font-mono text-sm"
           />
-          <Input v-model="port" placeholder="port the image listens on, e.g. 80" class="font-mono text-sm" />
+          <Input
+            v-model="port"
+            placeholder="port the image listens on, e.g. 80"
+            class="font-mono text-sm"
+          />
           <p class="text-xs text-muted-foreground">
             Private registries use the Lighthouse host's Docker credentials.
           </p>
@@ -350,8 +362,8 @@ async function onSave() {
             </Button>
           </div>
           <p class="text-xs text-muted-foreground">
-            Data written here survives redeploys. Without a volume, anything the container
-            writes is lost the next time you deploy.
+            Data written here survives redeploys. Without a volume, anything the container writes is
+            lost the next time you deploy.
           </p>
           <div v-if="volumeRows.length === 0" class="text-xs text-muted-foreground">
             No volumes.
@@ -384,8 +396,8 @@ async function onSave() {
             <Input v-model="memoryMb" placeholder="Memory MB, e.g. 512" class="font-mono text-sm" />
           </div>
           <p class="text-xs text-muted-foreground">
-            Left blank, the container runs unconstrained. A container that exceeds its memory
-            limit is killed by Docker.
+            Left blank, the container runs unconstrained. A container that exceeds its memory limit
+            is killed by Docker.
           </p>
         </div>
 
@@ -500,11 +512,7 @@ async function onSave() {
                   <ChevronDown />
                 </Button>
               </div>
-              <Input
-                v-model="row.command"
-                placeholder="make setup"
-                class="font-mono text-sm"
-              />
+              <Input v-model="row.command" placeholder="make setup" class="font-mono text-sm" />
               <Button
                 type="button"
                 variant="ghost"
@@ -555,7 +563,9 @@ async function onSave() {
 
         <!-- web service -->
         <div class="grid gap-2">
-          <Label for="bc-web">Web service <span class="text-muted-foreground">(optional)</span></Label>
+          <Label for="bc-web"
+            >Web service <span class="text-muted-foreground">(optional)</span></Label
+          >
           <Input id="bc-web" v-model="web" placeholder="web" class="font-mono text-sm" />
           <p class="text-xs text-muted-foreground">
             Which compose service receives traffic. Defaults to the heuristic.
@@ -564,7 +574,9 @@ async function onSave() {
 
         <!-- run command -->
         <div class="grid gap-2">
-          <Label for="bc-cmd">Run command <span class="text-muted-foreground">(optional)</span></Label>
+          <Label for="bc-cmd"
+            >Run command <span class="text-muted-foreground">(optional)</span></Label
+          >
           <Input
             id="bc-cmd"
             v-model="cmdText"
@@ -640,7 +652,11 @@ async function onSave() {
             class="grid gap-2 rounded-lg border border-border p-3"
           >
             <div class="flex items-center gap-2">
-              <Input v-model="row.label" placeholder="Label (e.g. Run migrations)" class="text-sm" />
+              <Input
+                v-model="row.label"
+                placeholder="Label (e.g. Run migrations)"
+                class="text-sm"
+              />
               <Button
                 type="button"
                 variant="ghost"
@@ -652,7 +668,11 @@ async function onSave() {
                 <X />
               </Button>
             </div>
-            <Input v-model="row.service" placeholder="service (e.g. web)" class="font-mono text-sm" />
+            <Input
+              v-model="row.service"
+              placeholder="service (e.g. web)"
+              class="font-mono text-sm"
+            />
             <Input
               v-model="row.command"
               placeholder="command (e.g. php artisan migrate --force)"

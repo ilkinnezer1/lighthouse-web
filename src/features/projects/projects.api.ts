@@ -23,7 +23,6 @@ export async function createProject(input: CreateProjectInput) {
   return data
 }
 
-
 export async function updateProject(id: string, input: UpdateProjectInput) {
   const { data } = await api.patch<Project>(`/projects/${id}`, input)
   return data
@@ -41,14 +40,11 @@ export async function transferProject(id: string, organizationId: string) {
 }
 
 export async function listProjectBranches(id: string, base?: string, refresh?: boolean) {
-  const { data } = await api.get<RepoBranchWithMeta[]>(
-    `/projects/${id}/branches`,
-    {
-      params: {
-        ...(base ? { base } : {}),
-        ...(refresh ? { refresh: 1 } : {}),
-      },
+  const { data } = await api.get<RepoBranchWithMeta[]>(`/projects/${id}/branches`, {
+    params: {
+      ...(base ? { base } : {}),
+      ...(refresh ? { refresh: 1 } : {}),
     },
-  )
+  })
   return data
 }

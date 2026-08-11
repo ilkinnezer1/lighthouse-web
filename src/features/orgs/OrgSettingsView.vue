@@ -36,20 +36,34 @@ const { data: orgs, isPending } = useOrgs()
 const org = computed(() => orgs.value?.find((o) => o.id === props.id))
 const role = computed(() => org.value?.role)
 
-const canRename = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.update'))
-const canDelete = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.delete'))
-const canInvite = computed(() => !!org.value && !org.value.isPersonal && roleCan(role.value, 'members.manage'))
+const canRename = computed(
+  () => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.update'),
+)
+const canDelete = computed(
+  () => !!org.value && !org.value.isPersonal && roleCan(role.value, 'org.delete'),
+)
+const canInvite = computed(
+  () => !!org.value && !org.value.isPersonal && roleCan(role.value, 'members.manage'),
+)
 // Unlike invites, notifications make sense for a personal org too — a solo user
 // still wants a Slack ping when a deploy fails.
 const canNotify = computed(() => roleCan(role.value, 'notifications.manage'))
 
 const name = ref('')
-watch(org, (o) => { if (o) name.value = o.name }, { immediate: true })
+watch(
+  org,
+  (o) => {
+    if (o) name.value = o.name
+  },
+  { immediate: true },
+)
 
 const rename = useRenameOrg(() => props.id)
 const remove = useDeleteOrg()
 
-const dirty = computed(() => !!org.value && name.value.trim() !== org.value.name && !!name.value.trim())
+const dirty = computed(
+  () => !!org.value && name.value.trim() !== org.value.name && !!name.value.trim(),
+)
 
 async function onRename() {
   if (!dirty.value) return
@@ -111,7 +125,9 @@ async function onDelete() {
       <!-- General -->
       <section v-if="canRename" class="mt-8">
         <h2 class="text-sm font-semibold tracking-tight text-foreground">General</h2>
-        <div class="mt-3 flex flex-wrap items-end gap-2 rounded-xl border border-border bg-card p-4">
+        <div
+          class="mt-3 flex flex-wrap items-end gap-2 rounded-xl border border-border bg-card p-4"
+        >
           <div class="min-w-48 flex-1 space-y-1.5">
             <Label for="org-name">Name</Label>
             <Input id="org-name" v-model="name" maxlength="80" />

@@ -7,10 +7,9 @@ export async function listVolumeBackups(envId: string) {
 }
 
 export async function createVolumeBackup(envId: string, volumeName: string) {
-  const { data } = await api.post<VolumeBackup>(
-    `/environments/${envId}/volume-backups`,
-    { volumeName },
-  )
+  const { data } = await api.post<VolumeBackup>(`/environments/${envId}/volume-backups`, {
+    volumeName,
+  })
   return data
 }
 

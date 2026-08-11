@@ -66,7 +66,10 @@ const pretty = computed(() =>
         </template>
       </span>
 
-      <span v-if="row.ip" class="hidden shrink-0 font-mono text-xs text-muted-foreground/50 md:inline">
+      <span
+        v-if="row.ip"
+        class="hidden shrink-0 font-mono text-xs text-muted-foreground/50 md:inline"
+      >
         {{ row.ip }}
       </span>
     </button>
@@ -90,7 +93,7 @@ const pretty = computed(() =>
       <pre
         v-if="pretty"
         class="overflow-x-auto rounded-md border border-border bg-card p-3 font-mono text-xs leading-relaxed text-foreground/90"
-      >{{ pretty }}</pre>
+        >{{ pretty }}</pre>
       <p v-else class="text-xs italic text-muted-foreground/60">No payload recorded.</p>
     </div>
   </div>

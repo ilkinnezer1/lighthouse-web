@@ -10,7 +10,10 @@
       ;(function () {
         try {
           var p = localStorage.getItem('lighthouse.theme') || 'system'
-          if (p === 'dark' || (p === 'system' && matchMedia('(prefers-color-scheme: dark)').matches))
+          if (
+            p === 'dark' ||
+            (p === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+          )
             document.documentElement.classList.add('dark')
         } catch (e) {}
       })()

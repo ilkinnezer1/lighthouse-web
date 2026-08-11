@@ -89,14 +89,23 @@ async function onDisconnect() {
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5">
-          <Badge v-for="scope in props.connection.scopes" :key="scope" variant="secondary" class="font-mono text-[11px]">
+          <Badge
+            v-for="scope in props.connection.scopes"
+            :key="scope"
+            variant="secondary"
+            class="font-mono text-[11px]"
+          >
             {{ scope }}
           </Badge>
         </div>
 
         <AlertDialog>
           <AlertDialogTrigger as-child>
-            <Button variant="outline" size="sm" class="ml-auto text-destructive hover:text-destructive">
+            <Button
+              variant="outline"
+              size="sm"
+              class="ml-auto text-destructive hover:text-destructive"
+            >
               <Unplug />
               Disconnect
             </Button>
@@ -105,9 +114,9 @@ async function onDisconnect() {
             <AlertDialogHeader>
               <AlertDialogTitle>Disconnect GitHub?</AlertDialogTitle>
               <AlertDialogDescription>
-                Lighthouse will revoke its access token and stop listing your repositories.
-                Existing projects keep running, but private repos can no longer be cloned until
-                you reconnect.
+                Lighthouse will revoke its access token and stop listing your repositories. Existing
+                projects keep running, but private repos can no longer be cloned until you
+                reconnect.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

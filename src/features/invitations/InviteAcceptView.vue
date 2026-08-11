@@ -79,7 +79,9 @@ async function onAccept() {
           <p class="mt-1 text-sm text-muted-foreground">
             @{{ preview.inviterUsername }} invited you to join as
           </p>
-          <Badge :variant="ROLE_BADGE[preview.role]" class="mt-2">{{ ROLE_LABEL[preview.role] }}</Badge>
+          <Badge :variant="ROLE_BADGE[preview.role]" class="mt-2">{{
+            ROLE_LABEL[preview.role]
+          }}</Badge>
 
           <Button class="mt-6 w-full" :disabled="acceptLink.isPending.value" @click="onAccept">
             <LoaderCircle v-if="acceptLink.isPending.value" class="animate-spin" />
@@ -96,7 +98,13 @@ async function onAccept() {
 
         <template v-else>
           <h1 class="text-lg font-semibold tracking-tight text-foreground">
-            {{ status === 'missing' ? 'Invitation not found' : status === 'gone' ? 'Invitation expired' : 'Something went wrong' }}
+            {{
+              status === 'missing'
+                ? 'Invitation not found'
+                : status === 'gone'
+                  ? 'Invitation expired'
+                  : 'Something went wrong'
+            }}
           </h1>
           <p class="mt-2 text-sm text-muted-foreground">
             <template v-if="status === 'missing'">

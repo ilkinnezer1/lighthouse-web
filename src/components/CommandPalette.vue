@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Database, FolderGit2, Plug, Rocket, ScrollText, Search, Sparkles, Timer } from '@lucide/vue'
+import {
+  Database,
+  FolderGit2,
+  Plug,
+  Rocket,
+  ScrollText,
+  Search,
+  Sparkles,
+  Timer,
+} from '@lucide/vue'
 import { useProjects } from '@/features/projects/projects.queries'
 import { useCan } from '@/features/orgs/useCan'
 
@@ -111,9 +120,7 @@ function onKeydown(e: KeyboardEvent) {
 
 function scrollActiveIntoView() {
   void nextTick(() => {
-    listEl.value
-      ?.querySelector('[data-active="true"]')
-      ?.scrollIntoView({ block: 'nearest' })
+    listEl.value?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
   })
 }
 
@@ -162,7 +169,9 @@ defineExpose({ show })
             placeholder="Jump to a project or page…"
             class="h-12 min-w-0 flex-1 bg-transparent text-sm text-ink-1 outline-none placeholder:text-ink-4"
           />
-          <kbd class="shrink-0 rounded border border-rule px-1.5 py-0.5 font-mono text-[10px] text-ink-4">
+          <kbd
+            class="shrink-0 rounded border border-rule px-1.5 py-0.5 font-mono text-[10px] text-ink-4"
+          >
             esc
           </kbd>
         </div>

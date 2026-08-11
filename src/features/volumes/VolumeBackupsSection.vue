@@ -168,10 +168,7 @@ async function onDelete(b: VolumeBackup) {
       preview environment deletes its volumes.
     </p>
 
-    <div
-      v-else
-      class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border"
-    >
+    <div v-else class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border">
       <div v-for="b in backups" :key="b.id" class="flex items-center gap-3 bg-card px-4 py-3">
         <SignalDot :tone="tone[b.status]" :title="b.status.toLowerCase()" />
 
@@ -225,9 +222,9 @@ async function onDelete(b: VolumeBackup) {
               <AlertDialogTitle>Restore "{{ b.volumeName }}"?</AlertDialogTitle>
               <AlertDialogDescription>
                 Everything currently in the volume is replaced by this backup, taken
-                {{ relativeTime(b.createdAt) }}. Any container using it is stopped for the
-                restore and started again afterwards, so the app is briefly down. This cannot be
-                undone — take a fresh backup first if the current data still matters.
+                {{ relativeTime(b.createdAt) }}. Any container using it is stopped for the restore
+                and started again afterwards, so the app is briefly down. This cannot be undone —
+                take a fresh backup first if the current data still matters.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -10,13 +10,7 @@ import { dayLabel } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { DeploymentListItem, DeploymentStatus } from '@/types/api'
 import { Button } from '@/components/ui/button'
-import {
-  EmptyState,
-  ErrorState,
-  LoadingRows,
-  PageHead,
-  PageShell,
-} from '@/components/ui/section'
+import { EmptyState, ErrorState, LoadingRows, PageHead, PageShell } from '@/components/ui/section'
 import {
   Select,
   SelectContent,

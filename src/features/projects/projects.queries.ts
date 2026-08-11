@@ -1,9 +1,4 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/vue-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, ref, toValue } from 'vue'
 import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import type { CreateProjectInput, UpdateProjectInput } from '@/types/api'
@@ -21,8 +16,7 @@ export const projectKeys = {
   all: ['projects'] as const,
   list: (orgId: string | null) => ['projects', 'list', orgId] as const,
   detail: (id: string) => ['projects', id] as const,
-  branches: (id: string, base?: string) =>
-    ['projects', id, 'branches', base ?? null] as const,
+  branches: (id: string, base?: string) => ['projects', id, 'branches', base ?? null] as const,
 }
 
 export function useProjects() {
@@ -49,14 +43,9 @@ export function useProjectBranches(
 ) {
   const qc = useQueryClient()
   const query = useQuery({
-    queryKey: computed(() =>
-      projectKeys.branches(toValue(id), toValue(opts?.base) || undefined),
-    ),
-    queryFn: () =>
-      listProjectBranches(toValue(id), toValue(opts?.base) || undefined),
-    enabled: computed(() =>
-      opts?.enabled === undefined ? true : toValue(opts.enabled),
-    ),
+    queryKey: computed(() => projectKeys.branches(toValue(id), toValue(opts?.base) || undefined)),
+    queryFn: () => listProjectBranches(toValue(id), toValue(opts?.base) || undefined),
+    enabled: computed(() => (opts?.enabled === undefined ? true : toValue(opts.enabled))),
     staleTime: 60_000,
     placeholderData: keepPreviousData,
   })
@@ -114,13 +103,8 @@ export function useDeleteProject() {
 export function useTransferProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      projectId,
-      organizationId,
-    }: {
-      projectId: string
-      organizationId: string
-    }) => transferProject(projectId, organizationId),
+    mutationFn: ({ projectId, organizationId }: { projectId: string; organizationId: string }) =>
+      transferProject(projectId, organizationId),
     onSuccess: (_project, { projectId }) => {
       void qc.invalidateQueries({ queryKey: projectKeys.detail(projectId) })
       // Refresh both the source and destination org project lists.

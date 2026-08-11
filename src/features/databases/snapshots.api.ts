@@ -19,17 +19,12 @@ export async function deleteSnapshot(id: string) {
   await api.delete(`/snapshots/${id}`)
 }
 
-export async function updateSnapshot(
-  id: string,
-  input: { label?: string; isBaseline?: boolean },
-) {
+export async function updateSnapshot(id: string, input: { label?: string; isBaseline?: boolean }) {
   const { data } = await api.patch<DatabaseSnapshot>(`/snapshots/${id}`, input)
   return data
 }
 
 export async function resetEnvironment(envId: string) {
-  const { data } = await api.post<EnvironmentResetResult>(
-    `/environments/${envId}/reset`,
-  )
+  const { data } = await api.post<EnvironmentResetResult>(`/environments/${envId}/reset`)
   return data
 }

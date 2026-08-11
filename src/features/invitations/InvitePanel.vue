@@ -97,7 +97,12 @@ async function onRevoke(id: string) {
       <div class="flex flex-wrap items-end gap-2">
         <div class="min-w-48 flex-1 space-y-1.5">
           <Label for="invite-id">Username or email</Label>
-          <Input id="invite-id" v-model="identifier" placeholder="ada-lovelace" autocomplete="off" />
+          <Input
+            id="invite-id"
+            v-model="identifier"
+            placeholder="ada-lovelace"
+            autocomplete="off"
+          />
         </div>
         <div class="w-32 space-y-1.5">
           <Label for="invite-role">Role</Label>
@@ -121,9 +126,15 @@ async function onRevoke(id: string) {
 
       <div class="flex items-center justify-between gap-2 border-t border-border pt-3">
         <p class="text-xs text-muted-foreground">
-          Or mint a link anyone can use to join as <strong>{{ ROLE_LABEL[role] }}</strong>.
+          Or mint a link anyone can use to join as <strong>{{ ROLE_LABEL[role] }}</strong
+          >.
         </p>
-        <Button variant="outline" size="sm" :disabled="createLink.isPending.value" @click="onMintLink">
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="createLink.isPending.value"
+          @click="onMintLink"
+        >
           <LoaderCircle v-if="createLink.isPending.value" class="animate-spin" />
           <Link2 v-else />
           Create invite link
@@ -135,12 +146,15 @@ async function onRevoke(id: string) {
         <div class="flex items-center gap-2 text-xs text-muted-foreground">
           <Check class="size-3.5 text-primary" />
           Copy it now — it won't be shown again.
-          <Badge :variant="ROLE_BADGE[minted.role]" class="ml-auto">{{ ROLE_LABEL[minted.role] }}</Badge>
+          <Badge :variant="ROLE_BADGE[minted.role]" class="ml-auto">{{
+            ROLE_LABEL[minted.role]
+          }}</Badge>
         </div>
         <div class="mt-2 flex items-center gap-2">
           <code
             class="min-w-0 flex-1 truncate rounded-md bg-muted px-2.5 py-1.5 font-mono text-xs text-foreground"
-          >{{ minted.tokenLink }}</code>
+            >{{ minted.tokenLink }}</code
+          >
           <Button variant="ghost" size="icon-sm" title="Copy link" @click="copyLink">
             <Copy />
           </Button>

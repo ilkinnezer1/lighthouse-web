@@ -30,7 +30,11 @@ const toneIcon: Record<StatusTone, Component> = {
       toneClass[tone],
     ]"
   >
-    <component :is="toneIcon[tone]" class="size-3.5" :class="{ 'animate-spin': tone === 'active' }" />
+    <component
+      :is="toneIcon[tone]"
+      class="size-3.5"
+      :class="{ 'animate-spin': tone === 'active' }"
+    />
     {{ titleCase(status) }}
   </span>
 </template>

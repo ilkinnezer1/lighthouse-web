@@ -51,11 +51,7 @@ export interface ServiceActionResult {
   state: string
 }
 
-export async function actOnService(
-  deploymentId: string,
-  name: string,
-  action: ServiceAction,
-) {
+export async function actOnService(deploymentId: string, name: string, action: ServiceAction) {
   const { data } = await api.post<ServiceActionResult>(
     `/deployments/${deploymentId}/services/${encodeURIComponent(name)}/${action}`,
   )
@@ -85,18 +81,11 @@ export async function getDeploymentActions(deploymentId: string) {
 
 // Triggers a maintenance action and returns the raw streaming Response — axios
 // can't stream a body, so callers read `res.body` directly (like runtime logs).
-export function runDeploymentAction(
-  deploymentId: string,
-  actionId: string,
-  signal: AbortSignal,
-) {
-  return fetch(
-    `/api/deployments/${deploymentId}/actions/${encodeURIComponent(actionId)}`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      signal,
-      headers: { Accept: 'text/plain' },
-    },
-  )
+export function runDeploymentAction(deploymentId: string, actionId: string, signal: AbortSignal) {
+  return fetch(`/api/deployments/${deploymentId}/actions/${encodeURIComponent(actionId)}`, {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    headers: { Accept: 'text/plain' },
+  })
 }

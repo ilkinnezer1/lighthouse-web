@@ -23,9 +23,10 @@ export function describeCron(expr: string): string {
   const parts = expr.trim().split(/\s+/)
   if (parts.length !== 5) return expr
   const [min, hour, dom, mon, dow] = parts
-  const at = /^\d+$/.test(min) && /^\d+$/.test(hour)
-    ? `${hour.padStart(2, '0')}:${min.padStart(2, '0')}`
-    : null
+  const at =
+    /^\d+$/.test(min) && /^\d+$/.test(hour)
+      ? `${hour.padStart(2, '0')}:${min.padStart(2, '0')}`
+      : null
 
   if (at && dom === '*' && mon === '*' && dow === '*') return `Daily at ${at}`
   if (at && dom === '*' && mon === '*' && /^[0-6]$/.test(dow)) {

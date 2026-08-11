@@ -34,15 +34,11 @@ const values = ref<Record<string, string>>({})
 watch(open, (isOpen) => {
   if (!isOpen || !props.template) return
   name.value = props.template.name
-  values.value = Object.fromEntries(
-    props.template.promptedEnv.map((f) => [f.key, f.default ?? '']),
-  )
+  values.value = Object.fromEntries(props.template.promptedEnv.map((f) => [f.key, f.default ?? '']))
 })
 
 const missing = computed(() =>
-  (props.template?.promptedEnv ?? []).filter(
-    (f) => f.required && !values.value[f.key]?.trim(),
-  ),
+  (props.template?.promptedEnv ?? []).filter((f) => f.required && !values.value[f.key]?.trim()),
 )
 const canSubmit = computed(
   () => !!name.value.trim() && missing.value.length === 0 && !instantiate.isPending.value,
@@ -84,8 +80,8 @@ async function onSubmit() {
         <DialogTitle>Deploy {{ template.name }}</DialogTitle>
         <DialogDescription>
           Creates a project running
-          <code class="font-mono text-ink-2">{{ template.image }}</code> and starts
-          the first deployment.
+          <code class="font-mono text-ink-2">{{ template.image }}</code> and starts the first
+          deployment.
         </DialogDescription>
       </DialogHeader>
 
@@ -95,11 +91,7 @@ async function onSubmit() {
           <Input id="tpl-name" v-model="name" :placeholder="template.name" />
         </div>
 
-        <div
-          v-for="field in template.promptedEnv"
-          :key="field.key"
-          class="grid gap-1.5"
-        >
+        <div v-for="field in template.promptedEnv" :key="field.key" class="grid gap-1.5">
           <Label :for="`tpl-${field.key}`">
             {{ field.label }}
             <span v-if="field.required" class="text-ink-4">· required</span>
@@ -127,8 +119,8 @@ async function onSubmit() {
           <span>
             {{ template.generatedEnvCount }}
             {{ template.generatedEnvCount === 1 ? 'secret is' : 'secrets are' }}
-            generated on the server and stored encrypted. You can read them back
-            under the environment's variables.
+            generated on the server and stored encrypted. You can read them back under the
+            environment's variables.
           </span>
         </p>
 

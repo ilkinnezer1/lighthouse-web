@@ -11,10 +11,7 @@ export async function listBackupSchedules(envId: string) {
 }
 
 export async function createBackupSchedule(envId: string, input: CreateBackupScheduleInput) {
-  const { data } = await api.post<BackupSchedule>(
-    `/environments/${envId}/backup-schedules`,
-    input,
-  )
+  const { data } = await api.post<BackupSchedule>(`/environments/${envId}/backup-schedules`, input)
   return data
 }
 

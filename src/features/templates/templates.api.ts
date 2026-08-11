@@ -10,10 +10,7 @@ export async function listTemplates() {
   return data
 }
 
-export async function instantiateTemplate(
-  slug: string,
-  input: InstantiateTemplateInput,
-) {
+export async function instantiateTemplate(slug: string, input: InstantiateTemplateInput) {
   const { data } = await api.post<InstantiateTemplateResult>(
     `/templates/${slug}/instantiate`,
     input,

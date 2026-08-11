@@ -52,13 +52,7 @@ function onDbCreated(db: ManagedDatabase) {
   void router.push(`/projects/${props.projectId}/env/${props.envId}/databases/${db.id}`)
 }
 
-const {
-  data: deployments,
-  isPending,
-  isError,
-  error,
-  refetch,
-} = useDeployments(() => props.envId)
+const { data: deployments, isPending, isError, error, refetch } = useDeployments(() => props.envId)
 
 const showDeploy = ref(false)
 function onDeployed(dep: Deployment) {
@@ -67,9 +61,7 @@ function onDeployed(dep: Deployment) {
 
 // Service names for the task picker, taken from the newest deployment we know about.
 const serviceNames = computed(() => {
-  const names = (deployments.value ?? [])
-    .flatMap((d) => d.services ?? [])
-    .map((s) => s.name)
+  const names = (deployments.value ?? []).flatMap((d) => d.services ?? []).map((s) => s.name)
   return names.length ? [...new Set(names)] : ['web']
 })
 
@@ -132,7 +124,8 @@ const tabsWithCounts = computed(() =>
     <PageHead eyebrow="Environment" :title="env?.name ?? 'Environment'" class="mt-5">
       <template #deck>
         Deploys the latest commit on
-        <span class="font-mono text-ink-2">{{ env?.branch ?? 'the branch' }}</span>.
+        <span class="font-mono text-ink-2">{{ env?.branch ?? 'the branch' }}</span
+        >.
       </template>
       <template #actions>
         <Button v-if="canDeploy" size="sm" @click="showDeploy = true">
@@ -252,10 +245,7 @@ const tabsWithCounts = computed(() =>
           :to="`/projects/${projectId}/env/${envId}/databases/${db.id}`"
           class="flex items-center gap-3 py-3 transition-colors hover:bg-accent/40"
         >
-          <StatusBadge
-            :tone="databaseDisplay(db).tone"
-            :label="databaseDisplay(db).label"
-          />
+          <StatusBadge :tone="databaseDisplay(db).tone" :label="databaseDisplay(db).label" />
           <div class="min-w-0 flex-1">
             <p class="truncate font-mono text-sm text-ink-1">{{ db.name }}</p>
             <p class="mt-0.5 truncate text-xs text-ink-4">

@@ -75,10 +75,10 @@ async function onCheck() {
   <section>
     <h2 class="text-sm font-semibold tracking-tight text-foreground">Custom domain</h2>
     <p class="mt-1 text-xs text-muted-foreground">
-      Serve this environment on your own hostname instead of the generated address. Point the
-      domain at this server first, then add it here — Traefik picks it up
-      <strong class="font-medium">on the next deploy</strong>, because routing is attached when
-      the container is created.
+      Serve this environment on your own hostname instead of the generated address. Point the domain
+      at this server first, then add it here — Traefik picks it up
+      <strong class="font-medium">on the next deploy</strong>, because routing is attached when the
+      container is created.
     </p>
 
     <div v-if="isPending" class="mt-3">
@@ -101,7 +101,12 @@ async function onCheck() {
         />
         <Button
           size="sm"
-          :disabled="!canEdit || !draft.trim() || draft.trim() === status?.customDomain || save.isPending.value"
+          :disabled="
+            !canEdit ||
+            !draft.trim() ||
+            draft.trim() === status?.customDomain ||
+            save.isPending.value
+          "
           @click="onSave"
         >
           <LoaderCircle v-if="save.isPending.value" class="animate-spin" />

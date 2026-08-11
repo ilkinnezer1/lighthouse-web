@@ -27,11 +27,9 @@ function paint(p: ThemePref) {
 export function initTheme() {
   pref.value = readStored()
   paint(pref.value)
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', () => {
-      if (pref.value === 'system') paint('system')
-    })
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (pref.value === 'system') paint('system')
+  })
 }
 
 export function useTheme() {

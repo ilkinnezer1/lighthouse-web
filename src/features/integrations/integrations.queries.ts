@@ -6,12 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
-import {
-  disconnectGithub,
-  getConnections,
-  isNotConnected,
-  listRepos,
-} from './integrations.api'
+import { disconnectGithub, getConnections, isNotConnected, listRepos } from './integrations.api'
 
 export const integrationKeys = {
   all: ['integrations'] as const,

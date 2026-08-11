@@ -1,12 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/vue-query'
-import {
-  computed,
-  type ComputedRef,
-  type MaybeRefOrGetter,
-  ref,
-  type Ref,
-  toValue,
-} from 'vue'
+import { computed, type ComputedRef, type MaybeRefOrGetter, ref, type Ref, toValue } from 'vue'
 
 export function useCursorFeed<T>(opts: {
   queryKey: MaybeRefOrGetter<readonly unknown[]>
@@ -18,12 +11,11 @@ export function useCursorFeed<T>(opts: {
 }) {
   const query = useInfiniteQuery({
     queryKey: computed(() => toValue(opts.queryKey)),
-    queryFn: ({ pageParam }) => opts.fetchPage((pageParam) || undefined),
+    queryFn: ({ pageParam }) => opts.fetchPage(pageParam || undefined),
     initialPageParam: '',
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     refetchInterval: opts.refetchInterval
-      ? (q) =>
-          opts.refetchInterval!(q.state.data?.pages.flatMap((p) => p.items) ?? [])
+      ? (q) => opts.refetchInterval!(q.state.data?.pages.flatMap((p) => p.items) ?? [])
       : undefined,
     refetchIntervalInBackground: opts.refetchIntervalInBackground,
   })
@@ -33,6 +25,6 @@ export function useCursorFeed<T>(opts: {
 
 export function useSelectFilter<T extends string>(): [Ref<T | 'all'>, ComputedRef<T | undefined>] {
   const model = ref('all') as Ref<T | 'all'>
-  const param = computed(() => (model.value === 'all' ? undefined : (model.value)))
+  const param = computed(() => (model.value === 'all' ? undefined : model.value))
   return [model, param]
 }

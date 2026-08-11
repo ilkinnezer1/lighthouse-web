@@ -35,7 +35,13 @@ const enabled = computed(() =>
 )
 
 const { data: projects } = useProjects()
-const { data: tasks, isPending, isError, error, refetch } = useAllScheduledTasks({
+const {
+  data: tasks,
+  isPending,
+  isError,
+  error,
+  refetch,
+} = useAllScheduledTasks({
   projectId,
   enabled,
 })
@@ -49,9 +55,7 @@ const runTone: Record<TaskRunStatus, StatusTone> = {
   SKIPPED: 'neutral',
 }
 
-const filtered = computed(
-  () => projectFilter.value !== 'all' || stateFilter.value !== 'all',
-)
+const filtered = computed(() => projectFilter.value !== 'all' || stateFilter.value !== 'all')
 function clearFilters() {
   projectFilter.value = 'all'
   stateFilter.value = 'all'
@@ -142,14 +146,21 @@ const count = computed(() => tasks.value?.length ?? 0)
               :tone="runTone[t.runs[0].status]"
               :title="`Last run ${t.runs[0].status.toLowerCase()}`"
             />
-            <span v-else class="size-2 shrink-0 rounded-full border border-rule" title="Never run" />
+            <span
+              v-else
+              class="size-2 shrink-0 rounded-full border border-rule"
+              title="Never run"
+            />
 
             <RouterLink
               :to="`/projects/${t.environment.project.id}/env/${t.environment.id}`"
               class="flex min-w-0 flex-1 items-center gap-4"
             >
               <span class="min-w-0 shrink-0 basis-44">
-                <span class="block truncate text-sm" :class="t.enabled ? 'text-ink-1' : 'text-ink-4'">
+                <span
+                  class="block truncate text-sm"
+                  :class="t.enabled ? 'text-ink-1' : 'text-ink-4'"
+                >
                   {{ t.name }}
                   <span v-if="!t.enabled" class="text-ink-4">· paused</span>
                 </span>
@@ -159,7 +170,8 @@ const count = computed(() => tasks.value?.length ?? 0)
               </span>
 
               <span class="min-w-0 shrink-0 basis-48 truncate text-xs text-ink-3">
-                {{ t.environment.project.name }}<span class="text-ink-4">/{{ t.environment.name }}</span>
+                {{ t.environment.project.name
+                }}<span class="text-ink-4">/{{ t.environment.name }}</span>
               </span>
 
               <code class="min-w-0 flex-1 truncate font-mono text-xs text-ink-4">

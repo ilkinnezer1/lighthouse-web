@@ -188,12 +188,7 @@ async function confirmDelete() {
       </p>
 
       <div v-if="adding" class="mt-3 rounded-xl border border-border bg-card px-4 py-3">
-        <Input
-          v-model="newPath"
-          placeholder=".env.local"
-          autofocus
-          class="h-9 font-mono text-sm"
-        />
+        <Input v-model="newPath" placeholder=".env.local" autofocus class="h-9 font-mono text-sm" />
         <Textarea
           v-model="newContent"
           rows="10"
@@ -225,8 +220,8 @@ async function confirmDelete() {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete file?</AlertDialogTitle>
           <AlertDialogDescription>
-            <span class="font-mono">{{ pendingDelete?.path }}</span> will no longer be applied on the
-            next deploy. This can't be undone.
+            <span class="font-mono">{{ pendingDelete?.path }}</span> will no longer be applied on
+            the next deploy. This can't be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

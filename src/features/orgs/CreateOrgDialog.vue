@@ -53,13 +53,7 @@ async function onSubmit() {
 
       <form id="create-org" class="grid gap-2 py-2" novalidate @submit.prevent="onSubmit">
         <Label for="org-name">Name</Label>
-        <Input
-          id="org-name"
-          v-model="name"
-          placeholder="Acme Inc."
-          maxlength="80"
-          autofocus
-        />
+        <Input id="org-name" v-model="name" placeholder="Acme Inc." maxlength="80" autofocus />
       </form>
 
       <DialogFooter>

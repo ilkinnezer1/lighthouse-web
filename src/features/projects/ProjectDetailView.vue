@@ -113,9 +113,7 @@ async function onTransferred(organizationId: string) {
 
 <template>
   <PageShell>
-    <Breadcrumb
-      :items="[{ label: 'Projects', to: '/' }, { label: project?.name ?? 'Project' }]"
-    />
+    <Breadcrumb :items="[{ label: 'Projects', to: '/' }, { label: project?.name ?? 'Project' }]" />
 
     <!-- loading -->
     <div v-if="isPending" class="mt-10">
@@ -145,11 +143,7 @@ async function onTransferred(organizationId: string) {
         </template>
 
         <template #actions>
-          <Button
-            v-if="canDeploy && primaryEnv"
-            size="sm"
-            @click="showDeploy = true"
-          >
+          <Button v-if="canDeploy && primaryEnv" size="sm" @click="showDeploy = true">
             <Rocket />
             Deploy
           </Button>
@@ -167,33 +161,33 @@ async function onTransferred(organizationId: string) {
             Transfer
           </Button>
           <AlertDialog v-if="canDeleteProject">
-          <AlertDialogTrigger as-child>
-            <Button variant="outline" size="sm" class="text-destructive hover:text-destructive">
-              <Trash2 />
-              Delete
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete {{ project.name }}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This removes the project and its environments. Deployed containers are torn
-                down. This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                class="bg-destructive text-white hover:bg-destructive/90"
-                :disabled="deleteProject.isPending.value"
-                @click="onDelete"
-              >
-                <LoaderCircle v-if="deleteProject.isPending.value" class="animate-spin" />
-                Delete project
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            <AlertDialogTrigger as-child>
+              <Button variant="outline" size="sm" class="text-destructive hover:text-destructive">
+                <Trash2 />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete {{ project.name }}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes the project and its environments. Deployed containers are torn down.
+                  This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  class="bg-destructive text-white hover:bg-destructive/90"
+                  :disabled="deleteProject.isPending.value"
+                  @click="onDelete"
+                >
+                  <LoaderCircle v-if="deleteProject.isPending.value" class="animate-spin" />
+                  Delete project
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </template>
       </PageHead>
 
@@ -212,7 +206,11 @@ async function onTransferred(organizationId: string) {
               :tone="statusTone[byEnvironment.get(env.id)!.status]"
               :title="titleCase(byEnvironment.get(env.id)!.status)"
             />
-            <span v-else class="size-2 shrink-0 rounded-full border border-rule" title="Never deployed" />
+            <span
+              v-else
+              class="size-2 shrink-0 rounded-full border border-rule"
+              title="Never deployed"
+            />
 
             <span class="flex shrink-0 basis-40 items-center gap-2.5">
               <Badge :variant="envBadge[env.type]" class="font-mono">{{ env.name }}</Badge>
@@ -262,8 +260,8 @@ async function onTransferred(organizationId: string) {
         </summary>
 
         <p class="mt-3 max-w-prose text-sm text-ink-3">
-          Add this webhook to your repo (Settings → Webhooks) to deploy on push and open
-          preview environments for pull requests.
+          Add this webhook to your repo (Settings → Webhooks) to deploy on push and open preview
+          environments for pull requests.
         </p>
 
         <div class="mt-4 space-y-3 rounded-lg bg-sunken p-4">
@@ -272,8 +270,14 @@ async function onTransferred(organizationId: string) {
             <div class="mt-1 flex items-center gap-2">
               <code
                 class="min-w-0 flex-1 truncate rounded-md bg-muted px-2.5 py-1.5 font-mono text-xs text-foreground"
-              >{{ webhookUrl }}</code>
-              <Button variant="ghost" size="icon-sm" title="Copy URL" @click="copy(webhookUrl, 'URL')">
+                >{{ webhookUrl }}</code
+              >
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Copy URL"
+                @click="copy(webhookUrl, 'URL')"
+              >
                 <Copy />
               </Button>
             </div>
@@ -287,7 +291,8 @@ async function onTransferred(organizationId: string) {
             <div class="mt-1 flex items-center gap-2">
               <code
                 class="min-w-0 flex-1 truncate rounded-md bg-muted px-2.5 py-1.5 font-mono text-xs text-foreground"
-              >{{ showSecret ? project.webhookSecret : '•'.repeat(32) }}</code>
+                >{{ showSecret ? project.webhookSecret : '•'.repeat(32) }}</code
+              >
               <Button
                 variant="ghost"
                 size="icon-sm"

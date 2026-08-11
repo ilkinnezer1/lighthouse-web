@@ -127,7 +127,10 @@ async function onDeploy() {
               :disabled="branchesQuery.isRefreshing.value || branchesQuery.isPending.value"
               @click="onFetch"
             >
-              <RefreshCw class="size-3.5" :class="{ 'animate-spin': branchesQuery.isRefreshing.value }" />
+              <RefreshCw
+                class="size-3.5"
+                :class="{ 'animate-spin': branchesQuery.isRefreshing.value }"
+              />
               Fetch
             </button>
           </div>

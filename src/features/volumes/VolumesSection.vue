@@ -61,15 +61,8 @@ async function onDelete(name: string) {
       No volumes yet — one is created the first time you deploy with a volume declared.
     </p>
 
-    <div
-      v-else
-      class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border"
-    >
-      <div
-        v-for="v in volumes"
-        :key="v.volume"
-        class="flex items-center gap-3 bg-card px-4 py-3"
-      >
+    <div v-else class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border">
+      <div v-for="v in volumes" :key="v.volume" class="flex items-center gap-3 bg-card px-4 py-3">
         <HardDrive class="size-4 shrink-0 text-muted-foreground" />
         <div class="min-w-0 flex-1">
           <div class="truncate font-mono text-sm text-foreground">{{ v.name }}</div>

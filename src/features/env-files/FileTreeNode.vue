@@ -39,13 +39,17 @@ function onCreate() {
       >
         <ChevronRight
           v-if="node.type === 'dir'"
-          :class="cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')"
+          :class="
+            cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')
+          "
         />
         <span v-else class="w-3.5 shrink-0" />
 
         <component
           :is="node.type === 'dir' ? (open ? FolderOpen : Folder) : FileCode"
-          :class="cn('size-4 shrink-0', node.type === 'dir' ? 'text-primary/80' : 'text-muted-foreground')"
+          :class="
+            cn('size-4 shrink-0', node.type === 'dir' ? 'text-primary/80' : 'text-muted-foreground')
+          "
         />
         <span class="flex-1 truncate font-mono text-xs text-foreground">{{ node.name }}</span>
         <Badge v-if="node.overridden" variant="secondary" class="px-1.5 py-0 text-[10px]">

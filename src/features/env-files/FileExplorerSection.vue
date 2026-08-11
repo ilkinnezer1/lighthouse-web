@@ -18,10 +18,7 @@ const { data: tree, isPending, isError, refetch: refetchTree } = useFileTree(() 
 const save = useSaveEnvironmentFile(() => props.envId)
 
 const selectedPath = ref<string | null>(null)
-const { data: file, isFetching: contentLoading } = useFileContent(
-  () => props.envId,
-  selectedPath,
-)
+const { data: file, isFetching: contentLoading } = useFileContent(() => props.envId, selectedPath)
 
 const nodes = computed(() => buildFileTree(tree.value?.entries ?? []))
 const isEmpty = computed(() => !isPending.value && !isError.value && nodes.value.length === 0)
@@ -145,12 +142,10 @@ async function onCreate() {
       class="mt-3 rounded-xl border border-dashed border-border py-12 text-center"
     >
       <FolderTree class="mx-auto size-5 text-muted-foreground" />
-      <p class="mt-2 text-sm text-muted-foreground">
-        This deployment has no source to browse.
-      </p>
+      <p class="mt-2 text-sm text-muted-foreground">This deployment has no source to browse.</p>
       <p class="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-        Prebuilt-image deploys skip the clone entirely, and an older deploy's files may have
-        been cleaned up.
+        Prebuilt-image deploys skip the clone entirely, and an older deploy's files may have been
+        cleaned up.
       </p>
     </div>
 
@@ -159,9 +154,7 @@ async function onCreate() {
       class="mt-3 rounded-xl border border-dashed border-border py-12 text-center"
     >
       <FolderTree class="mx-auto size-5 text-muted-foreground" />
-      <p class="mt-2 text-sm text-muted-foreground">
-        Deploy this environment to browse its files.
-      </p>
+      <p class="mt-2 text-sm text-muted-foreground">Deploy this environment to browse its files.</p>
     </div>
 
     <div v-else class="mt-3 grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
@@ -210,10 +203,19 @@ async function onCreate() {
               class="min-h-72 resize-y font-mono text-xs"
             />
             <div class="mt-3 flex items-center justify-end gap-2">
-              <Button size="sm" variant="outline" :disabled="save.isPending.value" @click="cancelCreate">
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="save.isPending.value"
+                @click="cancelCreate"
+              >
                 Cancel
               </Button>
-              <Button size="sm" :disabled="!newPath.trim() || save.isPending.value" @click="onCreate">
+              <Button
+                size="sm"
+                :disabled="!newPath.trim() || save.isPending.value"
+                @click="onCreate"
+              >
                 <LoaderCircle v-if="save.isPending.value" class="animate-spin" />
                 <Save v-else />
                 Create file
@@ -233,7 +235,9 @@ async function onCreate() {
         <template v-else>
           <div class="flex items-center gap-2 border-b border-border px-4 py-2.5">
             <FileText class="size-4 shrink-0 text-muted-foreground" />
-            <span class="flex-1 truncate font-mono text-xs text-foreground">{{ selectedPath }}</span>
+            <span class="flex-1 truncate font-mono text-xs text-foreground">{{
+              selectedPath
+            }}</span>
             <Badge v-if="fileReady && file?.overridden" variant="secondary" class="text-[10px]">
               overridden
             </Badge>

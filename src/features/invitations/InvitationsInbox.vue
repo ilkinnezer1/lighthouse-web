@@ -93,7 +93,9 @@ async function onDecline(inv: MyInvitation) {
                 from @{{ inv.invitedBy.username }} · {{ relativeTime(inv.createdAt) }}
               </p>
             </div>
-            <Badge :variant="ROLE_BADGE[inv.role]" class="shrink-0">{{ ROLE_LABEL[inv.role] }}</Badge>
+            <Badge :variant="ROLE_BADGE[inv.role]" class="shrink-0">{{
+              ROLE_LABEL[inv.role]
+            }}</Badge>
           </div>
           <div class="mt-2 flex items-center gap-2">
             <button

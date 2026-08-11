@@ -55,8 +55,7 @@ export function useDeploymentsFeed(filters: {
         projectId: toValue(filters.projectId),
         limit: 30,
       }),
-    refetchInterval: (items) =>
-      items.some((d) => !isTerminalStatus(d.status)) ? 4000 : false,
+    refetchInterval: (items) => (items.some((d) => !isTerminalStatus(d.status)) ? 4000 : false),
     refetchIntervalInBackground: true,
   })
 }
@@ -139,8 +138,7 @@ export function useCreateDeployment(envId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input?: CreateDeploymentInput) => createDeployment(toValue(envId), input),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: deploymentKeys.byEnv(toValue(envId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: deploymentKeys.byEnv(toValue(envId)) }),
   })
 }
 

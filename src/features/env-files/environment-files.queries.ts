@@ -12,8 +12,7 @@ import {
 export const environmentFileKeys = {
   byEnv: (envId: string) => ['environment-files', envId] as const,
   tree: (envId: string) => ['environment-files', envId, 'tree'] as const,
-  content: (envId: string, path: string) =>
-    ['environment-files', envId, 'content', path] as const,
+  content: (envId: string, path: string) => ['environment-files', envId, 'content', path] as const,
 }
 
 export function useEnvironmentFiles(envId: MaybeRefOrGetter<string>) {
@@ -27,8 +26,7 @@ export function useSaveEnvironmentFile(envId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: SaveManagedFileInput) => saveEnvironmentFile(toValue(envId), input),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: environmentFileKeys.byEnv(toValue(envId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: environmentFileKeys.byEnv(toValue(envId)) }),
   })
 }
 
@@ -54,7 +52,6 @@ export function useDeleteEnvironmentFile(envId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (path: string) => deleteEnvironmentFile(toValue(envId), path),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: environmentFileKeys.byEnv(toValue(envId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: environmentFileKeys.byEnv(toValue(envId)) }),
   })
 }

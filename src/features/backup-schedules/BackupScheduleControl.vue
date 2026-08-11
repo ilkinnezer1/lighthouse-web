@@ -2,7 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { CalendarClock, LoaderCircle } from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import { useBackupSchedules, useDeleteBackupSchedule, useSaveBackupSchedule } from './schedules.queries'
+import {
+  useBackupSchedules,
+  useDeleteBackupSchedule,
+  useSaveBackupSchedule,
+} from './schedules.queries'
 import { useCan } from '@/features/orgs/useCan'
 import { apiErrorMessage } from '@/lib/api'
 import { relativeTime } from '@/lib/time'
@@ -103,7 +107,9 @@ async function apply() {
 </script>
 
 <template>
-  <div class="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-border px-4 py-3">
+  <div
+    class="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-border px-4 py-3"
+  >
     <CalendarClock class="size-4 shrink-0 text-muted-foreground" />
     <span class="text-sm text-foreground">Automatic backups</span>
 
@@ -131,27 +137,29 @@ async function apply() {
       />
     </label>
 
-    <Button
-      v-if="dirty"
-      size="sm"
-      :disabled="!canManage || busy"
-      @click="apply"
-    >
+    <Button v-if="dirty" size="sm" :disabled="!canManage || busy" @click="apply">
       <LoaderCircle v-if="busy" class="animate-spin" />
       Save
     </Button>
 
     <p class="w-full text-xs text-muted-foreground/70">
       <template v-if="isCustom">
-        Custom schedule <span class="font-mono">{{ existing!.schedule }}</span> — edit it through the API.
+        Custom schedule <span class="font-mono">{{ existing!.schedule }}</span> — edit it through
+        the API.
       </template>
       <template v-else-if="existing && existing.enabled">
         Keeps the {{ existing.keepLast }} most recent automatic backups; ones you took yourself are
         never removed.
-        <template v-if="existing.nextRunAt"> Next run {{ relativeTime(existing.nextRunAt) }}.</template>
-        <template v-if="existing.lastRunAt"> Last run {{ relativeTime(existing.lastRunAt) }}.</template>
+        <template v-if="existing.nextRunAt">
+          Next run {{ relativeTime(existing.nextRunAt) }}.</template
+        >
+        <template v-if="existing.lastRunAt">
+          Last run {{ relativeTime(existing.lastRunAt) }}.</template
+        >
       </template>
-      <template v-else> No automatic backups — this target is only backed up when you ask. </template>
+      <template v-else>
+        No automatic backups — this target is only backed up when you ask.
+      </template>
     </p>
   </div>
 </template>

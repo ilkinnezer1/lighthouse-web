@@ -15,10 +15,7 @@ export const signupSchema = z.object({
       /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/,
       'Lowercase letters, numbers and hyphens; no leading or trailing hyphen',
     ),
-  password: z
-    .string()
-    .min(12, 'At least 12 characters')
-    .max(128, 'At most 128 characters'),
+  password: z.string().min(12, 'At least 12 characters').max(128, 'At most 128 characters'),
   displayName: z.string().max(80, 'At most 80 characters').optional(),
 })
 

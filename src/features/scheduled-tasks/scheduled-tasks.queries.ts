@@ -1,9 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
-import type {
-  CreateScheduledTaskInput,
-  UpdateScheduledTaskInput,
-} from '@/types/api'
+import type { CreateScheduledTaskInput, UpdateScheduledTaskInput } from '@/types/api'
 import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import {
   createScheduledTask,
@@ -64,10 +61,8 @@ export function useTaskRuns(
 export function useCreateScheduledTask(envId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: CreateScheduledTaskInput) =>
-      createScheduledTask(toValue(envId), input),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) }),
+    mutationFn: (input: CreateScheduledTaskInput) => createScheduledTask(toValue(envId), input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) }),
   })
 }
 
@@ -76,8 +71,7 @@ export function useUpdateScheduledTask(envId: MaybeRefOrGetter<string>) {
   return useMutation({
     mutationFn: (vars: { id: string; input: UpdateScheduledTaskInput }) =>
       updateScheduledTask(vars.id, vars.input),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) }),
   })
 }
 
@@ -85,8 +79,7 @@ export function useDeleteScheduledTask(envId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteScheduledTask(id),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) }),
   })
 }
 

@@ -129,8 +129,8 @@ function wants(channel: { events: string[] }, event: string): boolean {
       </Button>
     </div>
     <p class="mt-1 text-xs text-muted-foreground">
-      Posts to Slack, Discord or any webhook when a deploy in this organization finishes. The
-      URL is stored encrypted and never shown again.
+      Posts to Slack, Discord or any webhook when a deploy in this organization finishes. The URL is
+      stored encrypted and never shown again.
     </p>
 
     <div v-if="adding" class="mt-3 grid gap-3 rounded-xl border border-border bg-card p-4">

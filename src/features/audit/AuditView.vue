@@ -10,13 +10,7 @@ import type { AuditRow as AuditRowT } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  EmptyState,
-  ErrorState,
-  LoadingRows,
-  PageHead,
-  PageShell,
-} from '@/components/ui/section'
+import { EmptyState, ErrorState, LoadingRows, PageHead, PageShell } from '@/components/ui/section'
 import {
   Select,
   SelectContent,

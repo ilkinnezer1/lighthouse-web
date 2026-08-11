@@ -7,10 +7,7 @@ import {
   testNotificationChannel,
   updateNotificationChannel,
 } from './notifications.api'
-import type {
-  CreateNotificationChannelInput,
-  UpdateNotificationChannelInput,
-} from '@/types/api'
+import type { CreateNotificationChannelInput, UpdateNotificationChannelInput } from '@/types/api'
 
 export const notificationKeys = {
   byOrg: (orgId: string) => ['notification-channels', orgId] as const,

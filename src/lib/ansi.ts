@@ -10,10 +10,22 @@ export interface AnsiSegment {
 
 // 16-colour palette (Tailwind hues, tuned to stay legible on the dark console).
 const PALETTE = [
-  '#6b7280', '#ef4444', '#22c55e', '#eab308', // black red green yellow
-  '#3b82f6', '#a855f7', '#06b6d4', '#d1d5db', // blue magenta cyan white
-  '#9ca3af', '#f87171', '#4ade80', '#facc15', // bright black/red/green/yellow
-  '#60a5fa', '#c084fc', '#22d3ee', '#f3f4f6', // bright blue/magenta/cyan/white
+  '#6b7280',
+  '#ef4444',
+  '#22c55e',
+  '#eab308', // black red green yellow
+  '#3b82f6',
+  '#a855f7',
+  '#06b6d4',
+  '#d1d5db', // blue magenta cyan white
+  '#9ca3af',
+  '#f87171',
+  '#4ade80',
+  '#facc15', // bright black/red/green/yellow
+  '#60a5fa',
+  '#c084fc',
+  '#22d3ee',
+  '#f3f4f6', // bright blue/magenta/cyan/white
 ]
 
 function xterm256(n: number): string {

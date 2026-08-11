@@ -16,10 +16,7 @@ export async function getConnections(): Promise<ConnectionsResponse> {
   return data
 }
 
-export async function listRepos(params: {
-  search?: string
-  page?: number
-}): Promise<RepoPage> {
+export async function listRepos(params: { search?: string; page?: number }): Promise<RepoPage> {
   const { data } = await api.get<RepoPage>('/integrations/github/repos', {
     params: {
       ...(params.search ? { search: params.search } : {}),

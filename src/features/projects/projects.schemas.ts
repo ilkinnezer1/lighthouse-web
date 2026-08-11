@@ -15,11 +15,7 @@ export const createProjectSchema = z.object({
     .regex(subdomainRe, '3–32 chars, start with a letter, end alphanumeric, [a-z0-9-]')
     .optional()
     .or(z.literal('')),
-  defaultBranch: z
-    .string()
-    .max(64, 'At most 64 characters')
-    .optional()
-    .or(z.literal('')),
+  defaultBranch: z.string().max(64, 'At most 64 characters').optional().or(z.literal('')),
 })
 
 export type CreateProjectValues = z.infer<typeof createProjectSchema>

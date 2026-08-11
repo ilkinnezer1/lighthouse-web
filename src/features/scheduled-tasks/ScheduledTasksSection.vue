@@ -35,10 +35,7 @@ const dialogOpen = ref(false)
 const editing = ref<ScheduledTask | null>(null)
 const expanded = ref<string | null>(null)
 
-const runsQuery = useTaskRuns(
-  () => expanded.value ?? '',
-  { enabled: () => !!expanded.value },
-)
+const runsQuery = useTaskRuns(() => expanded.value ?? '', { enabled: () => !!expanded.value })
 
 const runTone: Record<TaskRunStatus, StatusTone> = {
   RUNNING: 'active',
@@ -205,9 +202,7 @@ const count = computed(() => tasks.value?.length ?? 0)
         <!-- run history -->
         <div v-if="expanded === t.id" class="pb-4 pl-5">
           <p v-if="runsQuery.isPending.value" class="text-xs text-ink-4">Loading runs…</p>
-          <p v-else-if="!runsQuery.data.value?.length" class="text-xs text-ink-4">
-            No runs yet.
-          </p>
+          <p v-else-if="!runsQuery.data.value?.length" class="text-xs text-ink-4">No runs yet.</p>
           <div v-else class="rule-y border-l border-rule pl-4">
             <div v-for="r in runsQuery.data.value" :key="r.id" class="py-2">
               <div class="flex items-baseline gap-3 text-xs">
@@ -221,14 +216,20 @@ const count = computed(() => tasks.value?.length ?? 0)
                 <span class="shrink-0 basis-16 font-mono text-ink-4">
                   {{ r.trigger === 'MANUAL' ? 'manual' : 'cron' }}
                 </span>
-                <span class="min-w-0 flex-1 truncate" :class="r.status === 'FAILED' ? 'text-signal-error' : 'text-ink-3'">
-                  {{ r.errorSummary ?? (r.exitCode != null ? `exit ${r.exitCode}` : r.status.toLowerCase()) }}
+                <span
+                  class="min-w-0 flex-1 truncate"
+                  :class="r.status === 'FAILED' ? 'text-signal-error' : 'text-ink-3'"
+                >
+                  {{
+                    r.errorSummary ??
+                    (r.exitCode != null ? `exit ${r.exitCode}` : r.status.toLowerCase())
+                  }}
                 </span>
               </div>
               <pre
                 v-if="r.output"
                 class="log-pane mt-2 max-h-40 overflow-auto rounded-md p-3 font-mono text-[11px] leading-relaxed"
-              >{{ r.output }}</pre>
+                >{{ r.output }}</pre>
             </div>
           </div>
         </div>

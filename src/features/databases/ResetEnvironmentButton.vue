@@ -26,9 +26,7 @@ const props = defineProps<{
 
 // Show the button when there is anything to reset. Gating on databases alone
 // hid it from environments whose state lives entirely in volumes.
-const hasTargets = computed(
-  () => props.databaseCount > 0 || (props.volumeBaselineCount ?? 0) > 0,
-)
+const hasTargets = computed(() => props.databaseCount > 0 || (props.volumeBaselineCount ?? 0) > 0)
 
 const reset = useResetEnvironment(() => props.envId)
 // Client gating is cosmetic; the API enforces snapshots.restore.
@@ -80,12 +78,11 @@ async function onReset() {
       <AlertDialogHeader>
         <AlertDialogTitle>Reset this environment's data?</AlertDialogTitle>
         <AlertDialogDescription>
-          Every database and volume here is restored to its baseline. Anything
-          written since — test accounts, uploads, order history — is discarded.
-          Anything without a baseline is left untouched, and reported back.
+          Every database and volume here is restored to its baseline. Anything written since — test
+          accounts, uploads, order history — is discarded. Anything without a baseline is left
+          untouched, and reported back.
           <template v-if="(volumeBaselineCount ?? 0) > 0">
-            Restoring a volume restarts whatever is using it, so the app is
-            briefly unavailable.
+            Restoring a volume restarts whatever is using it, so the app is briefly unavailable.
           </template>
         </AlertDialogDescription>
       </AlertDialogHeader>

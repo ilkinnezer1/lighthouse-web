@@ -39,8 +39,7 @@ export function useInviteUser(orgId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateInvitationInput) => inviteUser(toValue(orgId), input),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: invitationKeys.forOrg(toValue(orgId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: invitationKeys.forOrg(toValue(orgId)) }),
   })
 }
 
@@ -48,8 +47,7 @@ export function useCreateInviteLink(orgId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (role: OrgRole) => createInviteLink(toValue(orgId), role),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: invitationKeys.forOrg(toValue(orgId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: invitationKeys.forOrg(toValue(orgId)) }),
   })
 }
 
@@ -57,8 +55,7 @@ export function useRevokeInvitation(orgId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => revokeInvitation(id),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: invitationKeys.forOrg(toValue(orgId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: invitationKeys.forOrg(toValue(orgId)) }),
   })
 }
 

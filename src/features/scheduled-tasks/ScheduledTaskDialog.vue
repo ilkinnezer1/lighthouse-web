@@ -86,8 +86,8 @@ async function onSubmit() {
       <DialogHeader>
         <DialogTitle>{{ editing ? 'Edit task' : 'New scheduled task' }}</DialogTitle>
         <DialogDescription>
-          One command, run in a service container on a schedule. For several
-          steps, commit a script and run that.
+          One command, run in a service container on a schedule. For several steps, commit a script
+          and run that.
         </DialogDescription>
       </DialogHeader>
 
@@ -118,9 +118,8 @@ async function onSubmit() {
             placeholder="sh scripts/nightly.sh"
           />
           <p class="text-xs text-ink-4">
-            Runs from the repo root. Name the interpreter explicitly — alpine
-            images ship <code class="font-mono">sh</code>, not
-            <code class="font-mono">bash</code>.
+            Runs from the repo root. Name the interpreter explicitly — alpine images ship
+            <code class="font-mono">sh</code>, not <code class="font-mono">bash</code>.
           </p>
         </div>
 
@@ -140,7 +139,11 @@ async function onSubmit() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <Input v-model="schedule" class="flex-1 font-mono text-xs" aria-label="Cron expression" />
+            <Input
+              v-model="schedule"
+              class="flex-1 font-mono text-xs"
+              aria-label="Cron expression"
+            />
           </div>
           <p class="text-xs text-ink-4">{{ summary }} · {{ timezone }}</p>
         </div>

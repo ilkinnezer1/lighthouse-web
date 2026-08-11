@@ -29,8 +29,8 @@ const open = ref(false)
           <KeyRound class="mt-0.5 size-4 shrink-0 text-primary" />
           <span>
             <span class="text-foreground">Connecting</span> sends you to GitHub to authorize
-            Lighthouse. The token is stored encrypted on the server and never reaches your
-            browser — connecting grants repo access, it does not sign you in.
+            Lighthouse. The token is stored encrypted on the server and never reaches your browser —
+            connecting grants repo access, it does not sign you in.
           </span>
         </li>
         <li class="flex gap-3">

@@ -53,9 +53,7 @@ const display = computed(() =>
 
 // A stopped container can't be dumped, so "Ready" alone is not enough to offer a
 // snapshot — the job would be queued only to fail in the worker.
-const isReady = computed(
-  () => db.value?.status === 'READY' && db.value?.containerRunning !== false,
-)
+const isReady = computed(() => db.value?.status === 'READY' && db.value?.containerRunning !== false)
 
 // Redis loads its AOF on start and would ignore a restored RDB, so the server
 // has to be stopped while its data directory is rewritten.
@@ -188,8 +186,8 @@ async function onDeleteSnapshot(id: string) {
               <AlertDialogTitle>Delete {{ db.name }}?</AlertDialogTitle>
               <AlertDialogDescription>
                 <template v-if="db.ownsContainer">
-                  This tears down the database container and deletes all of its data and
-                  snapshots. This cannot be undone.
+                  This tears down the database container and deletes all of its data and snapshots.
+                  This cannot be undone.
                 </template>
                 <template v-else>
                   This detaches the connection from this environment. The underlying database is
@@ -314,11 +312,7 @@ async function onDeleteSnapshot(id: string) {
           v-else
           class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border"
         >
-          <div
-            v-for="s in snapshots"
-            :key="s.id"
-            class="flex items-center gap-4 bg-card px-4 py-3"
-          >
+          <div v-for="s in snapshots" :key="s.id" class="flex items-center gap-4 bg-card px-4 py-3">
             <StatusBadge :tone="snapshotTone[s.status]" :label="titleCase(s.status)" />
             <div class="min-w-0 flex-1">
               <p class="flex items-center gap-2 text-sm text-foreground">
@@ -332,7 +326,7 @@ async function onDeleteSnapshot(id: string) {
               </p>
               <p class="mt-0.5 text-xs text-muted-foreground">
                 <template v-if="s.label">{{ relativeTime(s.createdAt) }} · </template>
-                {{ s.status === 'READY' ? formatBytes(s.sizeBytes) : s.errorSummary ?? '—' }}
+                {{ s.status === 'READY' ? formatBytes(s.sizeBytes) : (s.errorSummary ?? '—') }}
               </p>
             </div>
 

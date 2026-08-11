@@ -34,7 +34,7 @@ export function useDeployWatch(opts: {
   async function enableNotifications() {
     if (permissionState.value === 'unsupported') return
     if (permissionState.value === 'default') {
-      permissionState.value = (await Notification.requestPermission())
+      permissionState.value = await Notification.requestPermission()
     }
     const on = permissionState.value === 'granted'
     notifyEnabled.value = on

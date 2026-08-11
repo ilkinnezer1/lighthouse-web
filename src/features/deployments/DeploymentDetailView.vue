@@ -125,9 +125,7 @@ const activeConnected = computed(() =>
   activeTab.value === 'build' ? connected.value : runtimeStreaming.value,
 )
 
-const isActive = computed(
-  () => !!deployment.value && !isTerminalStatus(deployment.value.status),
-)
+const isActive = computed(() => !!deployment.value && !isTerminalStatus(deployment.value.status))
 const canRedeploy = computed(() => !!deployment.value && !isActive.value)
 
 // How long the build took — the first thing you look for on a finished deploy.
@@ -222,13 +220,10 @@ function scrollToLatest() {
   pinned.value = true
 }
 
-watch(
-  [() => activeLines.value.length, activeTab],
-  async () => {
-    await nextTick()
-    if (pinned.value) scrollToLatest()
-  },
-)
+watch([() => activeLines.value.length, activeTab], async () => {
+  await nextTick()
+  if (pinned.value) scrollToLatest()
+})
 
 // Switching tabs is an explicit "show me this stream", so re-pin.
 watch(activeTab, () => {
@@ -329,7 +324,10 @@ const maintAction = maint.activeAction
 
 // The /deployments/:id route reuses this component on a param change, so the
 // composable's state would otherwise carry the prior deployment's run.
-watch(() => props.id, () => maint.reset())
+watch(
+  () => props.id,
+  () => maint.reset(),
+)
 
 function runMaintenance(action: MaintenanceActionDef) {
   void maint.run(action)
@@ -537,7 +535,9 @@ watch(
             >
               {{ relativeTime(metaFor(b.name)!.lastCommitDate!) }}
             </span>
-            <span class="font-mono text-xs text-muted-foreground">{{ shortSha(b.sha) ?? '—' }}</span>
+            <span class="font-mono text-xs text-muted-foreground">{{
+              shortSha(b.sha) ?? '—'
+            }}</span>
             <span class="text-xs text-muted-foreground">merged</span>
           </div>
         </div>
@@ -630,8 +630,8 @@ watch(
                     <AlertDialogHeader>
                       <AlertDialogTitle>Stop the web service?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        “{{ svc.name }}” serves this deployment — stopping it takes the site
-                        offline until you start it again.
+                        “{{ svc.name }}” serves this deployment — stopping it takes the site offline
+                        until you start it again.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -783,10 +783,7 @@ watch(
             class="log-pane h-64 overflow-auto p-4 font-mono text-xs leading-relaxed"
           >
             <p v-if="maintError" class="text-destructive">{{ maintError }}</p>
-            <p
-              v-else-if="maintLines.length === 0 && maintStatus === 'running'"
-              class="log-dim"
-            >
+            <p v-else-if="maintLines.length === 0 && maintStatus === 'running'" class="log-dim">
               Running…
             </p>
             <div
@@ -926,7 +923,8 @@ watch(
               :key="entry.key"
               :class="wrapLines ? 'whitespace-pre-wrap wrap-break-word' : 'whitespace-pre'"
             >
-              <span v-if="entry.stage" class="log-dim mr-2">[{{ entry.stage }}]</span><AnsiLine :text="entry.line" />
+              <span v-if="entry.stage" class="log-dim mr-2">[{{ entry.stage }}]</span
+              ><AnsiLine :text="entry.line" />
             </div>
           </div>
 

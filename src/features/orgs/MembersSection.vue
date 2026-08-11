@@ -88,10 +88,7 @@ const canManage = () => roleCan(props.actorRole, 'members.manage')
 
     <p v-else-if="isError" class="mt-3 text-sm text-destructive">Could not load members.</p>
 
-    <div
-      v-else
-      class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border"
-    >
+    <div v-else class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border">
       <div
         v-for="m in members ?? []"
         :key="m.userId"

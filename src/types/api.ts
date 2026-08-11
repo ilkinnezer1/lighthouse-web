@@ -95,22 +95,14 @@ export type DeploymentStatus =
   | 'CANCELLED'
 
 export type DeploymentStageStatus =
-  | 'PENDING'
-  | 'RUNNING'
-  | 'SUCCEEDED'
-  | 'FAILED'
-  | 'SKIPPED'
-  | 'ROLLED_BACK'
+  'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED' | 'ROLLED_BACK'
 
 export type DatabaseStatus = 'PROVISIONING' | 'READY' | 'FAILED'
 
 export type SnapshotStatus = 'PENDING' | 'READY' | 'FAILED'
 
 export type CreateDatabaseMode =
-  | 'attach-existing'
-  | 'create-empty'
-  | 'copy'
-  | 'create-from-snapshot'
+  'attach-existing' | 'create-empty' | 'copy' | 'create-from-snapshot'
 
 export interface User {
   id: string
@@ -123,13 +115,7 @@ export interface User {
 }
 
 export type BuildStrategy =
-  | 'dockerfile'
-  | 'compose'
-  | 'generated'
-  | 'nixpacks'
-  | 'buildpacks'
-  | 'railpack'
-  | 'image'
+  'dockerfile' | 'compose' | 'generated' | 'nixpacks' | 'buildpacks' | 'railpack' | 'image'
 
 export interface BuildConfig {
   strategy?: BuildStrategy
@@ -656,10 +642,7 @@ export interface ScheduledTask {
   createdAt: string
   updatedAt: string
   // Only the most recent run, included on the list endpoint.
-  runs?: Pick<
-    TaskRun,
-    'id' | 'status' | 'exitCode' | 'startedAt' | 'finishedAt' | 'errorSummary'
-  >[]
+  runs?: Pick<TaskRun, 'id' | 'status' | 'exitCode' | 'startedAt' | 'finishedAt' | 'errorSummary'>[]
 }
 
 export interface CreateScheduledTaskInput {

@@ -76,9 +76,7 @@ onKeyStroke('Escape', () => {
         role="dialog"
         aria-label="Service terminal"
       >
-        <header
-          class="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5"
-        >
+        <header class="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5">
           <div class="flex min-w-0 items-center gap-2">
             <SquareTerminal class="size-4 shrink-0 text-primary" />
             <span class="truncate font-mono text-sm">

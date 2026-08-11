@@ -124,7 +124,9 @@ async function onDelete(key: string) {
           </template>
 
           <template v-else>
-            <span class="flex-1 truncate font-mono text-xs text-muted-foreground">{{ v.value }}</span>
+            <span class="flex-1 truncate font-mono text-xs text-muted-foreground">{{
+              v.value
+            }}</span>
             <Button size="icon-sm" variant="ghost" title="Change value" @click="startEdit(v.key)">
               <Pencil />
             </Button>
@@ -142,7 +144,10 @@ async function onDelete(key: string) {
         </div>
       </div>
 
-      <p v-else class="mt-3 rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+      <p
+        v-else
+        class="mt-3 rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground"
+      >
         No variables yet. Add one below or paste a .env file.
       </p>
 

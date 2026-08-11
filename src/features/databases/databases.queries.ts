@@ -42,8 +42,7 @@ export function useDatabasesFeed(filters: {
         projectId: toValue(filters.projectId),
         limit: 30,
       }),
-    refetchInterval: (items) =>
-      items.some((d) => isDatabasePending(d.status)) ? 4000 : false,
+    refetchInterval: (items) => (items.some((d) => isDatabasePending(d.status)) ? 4000 : false),
     refetchIntervalInBackground: true,
   })
 }
@@ -70,7 +69,7 @@ export function useProjectDatabases(envIds: MaybeRefOrGetter<string[]>) {
       })),
     ),
     combine: (results) => ({
-      databases: results.flatMap((r) => (r.data ?? [])),
+      databases: results.flatMap((r) => r.data ?? []),
       isPending: results.some((r) => r.isPending),
     }),
   })
@@ -92,8 +91,7 @@ export function useCreateDatabase(envId: MaybeRefOrGetter<string>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateDatabaseInput) => createDatabase(toValue(envId), input),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: databaseKeys.byEnv(toValue(envId)) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: databaseKeys.byEnv(toValue(envId)) }),
   })
 }
 

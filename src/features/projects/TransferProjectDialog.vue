@@ -30,8 +30,7 @@ const transfer = useTransferProject()
 // re-checks both ends — this only declutters the picker.
 const destinations = computed(() =>
   (orgs.value ?? []).filter(
-    (o) =>
-      o.id !== props.project.organizationId && roleCan(o.role, 'project.create'),
+    (o) => o.id !== props.project.organizationId && roleCan(o.role, 'project.create'),
   ),
 )
 
@@ -67,8 +66,8 @@ async function onTransfer() {
         <DialogDescription>
           Move
           <span class="font-medium text-foreground">{{ project.name }}</span>
-          — with its environments, deployments, and databases — to another
-          organization. Its public URL keeps serving.
+          — with its environments, deployments, and databases — to another organization. Its public
+          URL keeps serving.
         </DialogDescription>
       </DialogHeader>
 
@@ -77,8 +76,8 @@ async function onTransfer() {
           v-if="destinations.length === 0"
           class="rounded-lg border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground"
         >
-          No other organizations you can transfer into. You need create access in
-          a different organization.
+          No other organizations you can transfer into. You need create access in a different
+          organization.
         </p>
 
         <button
@@ -118,8 +117,8 @@ async function onTransfer() {
       >
         <TriangleAlert class="mt-0.5 size-4 shrink-0 text-primary" />
         <p>
-          This is a personal organization. The current team will lose access — only
-          you will keep it.
+          This is a personal organization. The current team will lose access — only you will keep
+          it.
         </p>
       </div>
 
@@ -132,11 +131,7 @@ async function onTransfer() {
         >
           Cancel
         </Button>
-        <Button
-          type="button"
-          :disabled="!targetId || transfer.isPending.value"
-          @click="onTransfer"
-        >
+        <Button type="button" :disabled="!targetId || transfer.isPending.value" @click="onTransfer">
           <LoaderCircle v-if="transfer.isPending.value" class="animate-spin" />
           Transfer
         </Button>
