@@ -4,6 +4,7 @@ import configPrettier from 'eslint-config-prettier'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+import pluginVitest from '@vitest/eslint-plugin'
 
 export default tseslint.config(
   { ignores: ['dist/**', 'eslint.config.mjs'] },
@@ -25,8 +26,19 @@ export default tseslint.config(
     languageOptions: { parserOptions: { parser: tseslint.parser } },
   },
   {
-    files: ['vite.config.ts'],
+    files: ['vite.config.ts', 'vitest.config.ts'],
     languageOptions: { globals: { ...globals.node } },
+  },
+  {
+    files: ['src/**/*.test.ts', 'src/test/**'],
+    ...pluginVitest.configs.recommended,
+    rules: {
+      ...pluginVitest.configs.recommended.rules,
+      // Fixtures and mock replies are deliberately loose `unknown`/`any` shapes.
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+    },
   },
   {
     // Plain tsc cannot resolve `.vue` imports, so any value read off an SFC
