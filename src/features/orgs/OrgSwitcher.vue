@@ -26,7 +26,12 @@ function select(org: Organization) {
 function openSettings() {
   if (!activeOrg.value) return
   open.value = false
-  router.push(`/orgs/${activeOrg.value.id}/settings`)
+  void router.push(`/orgs/${activeOrg.value.id}/settings`)
+}
+
+function openCreate() {
+  open.value = false
+  showCreate.value = true
 }
 
 function onCreated(org: { id: string }) {
@@ -88,7 +93,7 @@ function isActive(org: Organization) {
       <button
         type="button"
         class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        @click="open = false; showCreate = true"
+        @click="openCreate"
       >
         <Plus class="size-3.5" />
         Create organization

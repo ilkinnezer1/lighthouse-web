@@ -85,7 +85,7 @@ watch(open, (isOpen) => {
   }
 })
 
-const mode = computed(() => values.mode as CreateDatabaseMode | undefined)
+const mode = computed(() => values.mode)
 function selectMode(m: CreateDatabaseMode) {
   setFieldValue('mode', m)
 }

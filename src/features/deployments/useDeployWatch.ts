@@ -9,7 +9,7 @@ type Supported = 'unsupported' | 'default' | 'granted' | 'denied'
 
 function permission(): Supported {
   if (typeof Notification === 'undefined') return 'unsupported'
-  return Notification.permission as Supported
+  return Notification.permission
 }
 
 /**
@@ -34,7 +34,7 @@ export function useDeployWatch(opts: {
   async function enableNotifications() {
     if (permissionState.value === 'unsupported') return
     if (permissionState.value === 'default') {
-      permissionState.value = (await Notification.requestPermission()) as Supported
+      permissionState.value = (await Notification.requestPermission())
     }
     const on = permissionState.value === 'granted'
     notifyEnabled.value = on
@@ -47,7 +47,8 @@ export function useDeployWatch(opts: {
   }
 
   function toggleNotifications() {
-    notifyEnabled.value ? disableNotifications() : enableNotifications()
+    if (notifyEnabled.value) disableNotifications()
+    else void enableNotifications()
   }
 
   // The title tracks status AND label, because the project name resolves from a

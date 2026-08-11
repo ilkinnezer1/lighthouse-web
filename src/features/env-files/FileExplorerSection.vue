@@ -75,7 +75,7 @@ function startCreate(folder: string | null) {
   creating.value = true
   newPath.value = folder ? `${folder}/` : ''
   newContent.value = ''
-  nextTick(() => {
+  void nextTick(() => {
     const el = pathInput.value?.$el as HTMLInputElement | undefined
     if (!el) return
     el.focus()

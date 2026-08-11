@@ -16,7 +16,7 @@ import {
   Sun,
   X,
 } from '@lucide/vue'
-import Logo from '@/components/Logo.vue'
+import AppLogo from '@/components/AppLogo.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/lib/theme'
@@ -86,7 +86,7 @@ const nav = [
       :class="navOpen ? 'translate-x-0' : '-translate-x-full'"
     >
       <div class="flex h-14 items-center justify-between px-5">
-        <Logo :size="24" />
+        <AppLogo :size="24" />
         <Button
           variant="ghost"
           size="icon-sm"

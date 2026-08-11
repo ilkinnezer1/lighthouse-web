@@ -29,7 +29,7 @@ setUnauthorizedHandler(() => {
   const auth = useAuthStore()
   auth.clear()
   if (!router.currentRoute.value.meta.public) {
-    router.replace({
+    void router.replace({
       name: 'login',
       query: { redirect: router.currentRoute.value.fullPath },
     })

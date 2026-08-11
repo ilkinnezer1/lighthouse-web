@@ -18,7 +18,7 @@ export function useCursorFeed<T>(opts: {
 }) {
   const query = useInfiniteQuery({
     queryKey: computed(() => toValue(opts.queryKey)),
-    queryFn: ({ pageParam }) => opts.fetchPage((pageParam as string) || undefined),
+    queryFn: ({ pageParam }) => opts.fetchPage((pageParam) || undefined),
     initialPageParam: '',
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     refetchInterval: opts.refetchInterval
@@ -33,6 +33,6 @@ export function useCursorFeed<T>(opts: {
 
 export function useSelectFilter<T extends string>(): [Ref<T | 'all'>, ComputedRef<T | undefined>] {
   const model = ref('all') as Ref<T | 'all'>
-  const param = computed(() => (model.value === 'all' ? undefined : (model.value as T)))
+  const param = computed(() => (model.value === 'all' ? undefined : (model.value)))
   return [model, param]
 }

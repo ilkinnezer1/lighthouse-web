@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Logo from '@/components/Logo.vue'
+import AppLogo from '@/components/AppLogo.vue'
 
 defineProps<{ title: string; subtitle?: string }>()
 </script>
@@ -22,7 +22,7 @@ defineProps<{ title: string; subtitle?: string }>()
       />
 
       <header class="relative z-10">
-        <Logo :size="30" />
+        <AppLogo :size="30" />
       </header>
 
       <div class="relative z-10 max-w-md">
@@ -44,7 +44,7 @@ defineProps<{ title: string; subtitle?: string }>()
     <main class="flex items-center justify-center p-6 sm:p-10">
       <div class="w-full max-w-sm">
         <div class="mb-10 lg:hidden">
-          <Logo :size="28" />
+          <AppLogo :size="28" />
         </div>
 
         <div class="mb-6">

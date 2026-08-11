@@ -49,7 +49,7 @@ const {
 } = useDatabases(() => props.envId)
 const showCreateDb = ref(false)
 function onDbCreated(db: ManagedDatabase) {
-  router.push(`/projects/${props.projectId}/env/${props.envId}/databases/${db.id}`)
+  void router.push(`/projects/${props.projectId}/env/${props.envId}/databases/${db.id}`)
 }
 
 const {
@@ -62,7 +62,7 @@ const {
 
 const showDeploy = ref(false)
 function onDeployed(dep: Deployment) {
-  router.push(`/deployments/${dep.id}`)
+  void router.push(`/deployments/${dep.id}`)
 }
 
 // Service names for the task picker, taken from the newest deployment we know about.

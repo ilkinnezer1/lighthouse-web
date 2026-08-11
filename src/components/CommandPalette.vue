@@ -67,7 +67,7 @@ function show() {
   open.value = true
   term.value = ''
   cursor.value = 0
-  nextTick(() => inputEl.value?.focus())
+  void nextTick(() => inputEl.value?.focus())
 }
 
 function hide() {
@@ -81,13 +81,14 @@ watch(() => route.fullPath, hide)
 function choose(item: Item | undefined) {
   if (!item) return
   hide()
-  router.push(item.to)
+  void router.push(item.to)
 }
 
 function onKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault()
-    open.value ? hide() : show()
+    if (open.value) hide()
+    else show()
     return
   }
   if (!open.value) return
@@ -109,7 +110,7 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 function scrollActiveIntoView() {
-  nextTick(() => {
+  void nextTick(() => {
     listEl.value
       ?.querySelector('[data-active="true"]')
       ?.scrollIntoView({ block: 'nearest' })

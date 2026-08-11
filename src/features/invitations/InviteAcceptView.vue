@@ -10,7 +10,7 @@ import { ROLE_BADGE, ROLE_LABEL } from '@/features/orgs/roles'
 import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { apiErrorMessage } from '@/lib/api'
 import type { InvitePreview } from '@/types/api'
-import Logo from '@/components/Logo.vue'
+import AppLogo from '@/components/AppLogo.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -60,7 +60,7 @@ async function onAccept() {
   <div class="flex min-h-svh items-center justify-center p-6">
     <div class="w-full max-w-sm">
       <div class="mb-8 flex justify-center">
-        <Logo :size="30" />
+        <AppLogo :size="30" />
       </div>
 
       <div class="rounded-xl border border-border bg-card p-6 text-center">

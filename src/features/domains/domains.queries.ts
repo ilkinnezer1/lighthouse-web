@@ -19,9 +19,9 @@ export function useSetDomain(envId: MaybeRefOrGetter<string>) {
   return useMutation({
     mutationFn: (domain: string) => setDomain(toValue(envId), domain),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: domainKeys.byEnv(toValue(envId)) })
+      void qc.invalidateQueries({ queryKey: domainKeys.byEnv(toValue(envId)) })
       // The deploy URL shown on the project detail page is derived from this.
-      qc.invalidateQueries({ queryKey: projectKeys.all })
+      void qc.invalidateQueries({ queryKey: projectKeys.all })
     },
   })
 }
@@ -31,8 +31,8 @@ export function useClearDomain(envId: MaybeRefOrGetter<string>) {
   return useMutation({
     mutationFn: () => clearDomain(toValue(envId)),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: domainKeys.byEnv(toValue(envId)) })
-      qc.invalidateQueries({ queryKey: projectKeys.all })
+      void qc.invalidateQueries({ queryKey: domainKeys.byEnv(toValue(envId)) })
+      void qc.invalidateQueries({ queryKey: projectKeys.all })
     },
   })
 }

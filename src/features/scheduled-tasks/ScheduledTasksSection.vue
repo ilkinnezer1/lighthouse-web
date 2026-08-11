@@ -60,7 +60,7 @@ async function onRun(t: ScheduledTask) {
     if (res.status === 'SUCCEEDED') toast.success(`${t.name} succeeded`)
     else if (res.status === 'SKIPPED') toast.info(`${t.name} skipped — already running`)
     else toast.error(`${t.name} failed${res.exitCode != null ? ` (exit ${res.exitCode})` : ''}`)
-    if (expanded.value === t.id) runsQuery.refetch()
+    if (expanded.value === t.id) void runsQuery.refetch()
   } catch (e) {
     toast.error(apiErrorMessage(e, 'Could not run the task'))
   } finally {

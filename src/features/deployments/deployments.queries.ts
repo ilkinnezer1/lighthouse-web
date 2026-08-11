@@ -149,8 +149,8 @@ export function useCancelDeployment() {
 }
 
 function invalidateFeeds(qc: ReturnType<typeof useQueryClient>, envId: string) {
-  qc.invalidateQueries({ queryKey: deploymentKeys.byEnv(envId) })
-  qc.invalidateQueries({ queryKey: deploymentKeys.all })
+  void qc.invalidateQueries({ queryKey: deploymentKeys.byEnv(envId) })
+  void qc.invalidateQueries({ queryKey: deploymentKeys.all })
 }
 
 export function useRedeployDeployment() {

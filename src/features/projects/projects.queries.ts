@@ -97,8 +97,8 @@ export function useUpdateProject(id: MaybeRefOrGetter<string>) {
   return useMutation({
     mutationFn: (input: UpdateProjectInput) => updateProject(toValue(id), input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: projectKeys.detail(toValue(id)) })
-      qc.invalidateQueries({ queryKey: projectKeys.all })
+      void qc.invalidateQueries({ queryKey: projectKeys.detail(toValue(id)) })
+      void qc.invalidateQueries({ queryKey: projectKeys.all })
     },
   })
 }
@@ -122,9 +122,9 @@ export function useTransferProject() {
       organizationId: string
     }) => transferProject(projectId, organizationId),
     onSuccess: (_project, { projectId }) => {
-      qc.invalidateQueries({ queryKey: projectKeys.detail(projectId) })
+      void qc.invalidateQueries({ queryKey: projectKeys.detail(projectId) })
       // Refresh both the source and destination org project lists.
-      qc.invalidateQueries({ queryKey: projectKeys.all })
+      void qc.invalidateQueries({ queryKey: projectKeys.all })
     },
   })
 }

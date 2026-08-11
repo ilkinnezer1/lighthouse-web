@@ -67,7 +67,7 @@ const primaryEnv = computed(() => {
 })
 const showDeploy = ref(false)
 function onDeployed(dep: Deployment) {
-  router.push(`/deployments/${dep.id}`)
+  void router.push(`/deployments/${dep.id}`)
 }
 // Gate transfer on the project's *current* org (Admin+ there), not the active
 // org — the user may be viewing it from a different scope.

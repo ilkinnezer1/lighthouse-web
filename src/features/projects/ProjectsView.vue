@@ -35,7 +35,7 @@ function repoLabel(p: Project) {
 }
 
 function goToProject(id: string) {
-  router.push(`/projects/${id}`)
+  void router.push(`/projects/${id}`)
 }
 </script>
 

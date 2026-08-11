@@ -89,7 +89,7 @@ const busyService = ref<string | null>(null)
 
 const { logs, connected } = useDeploymentLogs(
   () => props.id,
-  () => qc.invalidateQueries({ queryKey: deploymentKeys.detail(props.id) }),
+  () => void qc.invalidateQueries({ queryKey: deploymentKeys.detail(props.id) }),
 )
 
 const activeTab = ref<'build' | 'runtime'>('build')
@@ -265,7 +265,7 @@ async function onCancel() {
   try {
     await cancel.mutateAsync(props.id)
     toast.success('Cancellation requested')
-    refetch()
+    void refetch()
   } catch (e) {
     toast.error(apiErrorMessage(e, 'Could not cancel'))
   }
@@ -275,7 +275,7 @@ async function onRedeploy() {
   try {
     const created = await redeploy.mutateAsync(props.id)
     toast.success('Redeploy started')
-    router.push({ name: 'deployment', params: { id: created.id } })
+    void router.push({ name: 'deployment', params: { id: created.id } })
   } catch (e) {
     toast.error(apiErrorMessage(e, 'Could not redeploy'))
   }
@@ -285,7 +285,7 @@ async function onRollback() {
   try {
     const created = await rollback.mutateAsync(props.id)
     toast.success('Rollback started')
-    router.push({ name: 'deployment', params: { id: created.id } })
+    void router.push({ name: 'deployment', params: { id: created.id } })
   } catch (e) {
     toast.error(apiErrorMessage(e, 'Could not roll back'))
   }
@@ -332,7 +332,7 @@ const maintAction = maint.activeAction
 watch(() => props.id, () => maint.reset())
 
 function runMaintenance(action: MaintenanceActionDef) {
-  maint.run(action)
+  void maint.run(action)
 }
 
 const maintLogEl = ref<HTMLElement | null>(null)

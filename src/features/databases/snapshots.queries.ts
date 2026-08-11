@@ -49,8 +49,8 @@ export function useRestoreSnapshot(databaseId: MaybeRefOrGetter<string>) {
     mutationFn: (id: string) => restoreSnapshot(id),
     // Restore mutates the live DB; refresh both the snapshot list and the DB row.
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: snapshotKeys.byDatabase(toValue(databaseId)) })
-      qc.invalidateQueries({ queryKey: databaseKeys.detail(toValue(databaseId)) })
+      void qc.invalidateQueries({ queryKey: snapshotKeys.byDatabase(toValue(databaseId)) })
+      void qc.invalidateQueries({ queryKey: databaseKeys.detail(toValue(databaseId)) })
     },
   })
 }

@@ -41,7 +41,7 @@ function onDeploy(repo: RepoSummary) {
 }
 
 function onCreated(project: Project) {
-  router.push(`/projects/${project.id}`)
+  void router.push(`/projects/${project.id}`)
 }
 
 const errorMessages: Record<string, string> = {
@@ -54,12 +54,12 @@ onMounted(() => {
   const { connected, error } = route.query
   if (connected === 'github') {
     toast.success('GitHub connected')
-    qc.invalidateQueries({ queryKey: integrationKeys.all })
+    void qc.invalidateQueries({ queryKey: integrationKeys.all })
   } else if (typeof error === 'string') {
     toast.error(errorMessages[error] ?? 'Could not connect GitHub.')
     if (error === 'github_not_configured') notConfigured.value = true
   }
-  if (connected || error) router.replace({ query: {} })
+  if (connected || error) void router.replace({ query: {} })
 })
 </script>
 

@@ -2,12 +2,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { useCursorFeed } from '@/lib/feed'
-import type {
-  CreateDatabaseInput,
-  DatabaseStatus,
-  DatabaseType,
-  ManagedDatabase,
-} from '@/types/api'
+import type { CreateDatabaseInput, DatabaseStatus, DatabaseType } from '@/types/api'
 import {
   createDatabase,
   deleteDatabase,
@@ -75,7 +70,7 @@ export function useProjectDatabases(envIds: MaybeRefOrGetter<string[]>) {
       })),
     ),
     combine: (results) => ({
-      databases: results.flatMap((r) => (r.data ?? []) as ManagedDatabase[]),
+      databases: results.flatMap((r) => (r.data ?? [])),
       isPending: results.some((r) => r.isPending),
     }),
   })

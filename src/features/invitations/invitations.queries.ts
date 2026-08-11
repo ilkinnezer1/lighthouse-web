@@ -67,9 +67,9 @@ export function useAcceptInvitation() {
   return useMutation({
     mutationFn: (id: string) => acceptInvitation(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: invitationKeys.mine })
+      void qc.invalidateQueries({ queryKey: invitationKeys.mine })
       // Accepting joins an org, so the caller's org list changes.
-      qc.invalidateQueries({ queryKey: orgKeys.all })
+      void qc.invalidateQueries({ queryKey: orgKeys.all })
     },
   })
 }

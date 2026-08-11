@@ -95,8 +95,8 @@ export function useRunScheduledTask(envId: MaybeRefOrGetter<string>) {
   return useMutation({
     mutationFn: (id: string) => runScheduledTask(id),
     onSuccess: (_res, id) => {
-      qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) })
-      qc.invalidateQueries({ queryKey: taskKeys.runs(id) })
+      void qc.invalidateQueries({ queryKey: taskKeys.byEnv(toValue(envId)) })
+      void qc.invalidateQueries({ queryKey: taskKeys.runs(id) })
     },
   })
 }

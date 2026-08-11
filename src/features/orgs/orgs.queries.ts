@@ -69,9 +69,9 @@ export function useRemoveMember(orgId: MaybeRefOrGetter<string>) {
   return useMutation({
     mutationFn: (userId: string) => removeMember(toValue(orgId), userId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: orgKeys.members(toValue(orgId)) })
+      void qc.invalidateQueries({ queryKey: orgKeys.members(toValue(orgId)) })
       // Leaving an org drops it from the caller's list.
-      qc.invalidateQueries({ queryKey: orgKeys.all })
+      void qc.invalidateQueries({ queryKey: orgKeys.all })
     },
   })
 }
