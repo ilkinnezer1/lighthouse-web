@@ -10,6 +10,7 @@ import {
   createDeployment,
   getDeployment,
   getDeploymentActions,
+  getDeploymentChanges,
   getServiceHealth,
   getServiceStats,
   listAllDeployments,
@@ -24,6 +25,7 @@ export const deploymentKeys = {
   all: ['deployments', 'all'] as const,
   byEnv: (envId: string) => ['deployments', 'env', envId] as const,
   detail: (id: string) => ['deployments', id] as const,
+  changes: (id: string) => ['deployments', id, 'changes'] as const,
 }
 
 export function useAllDeployments() {
@@ -184,5 +186,23 @@ export function useServiceAction(deploymentId: MaybeRefOrGetter<string>) {
           : prev,
       )
     },
+  })
+}
+
+/**
+ * What landed since this environment's previous succeeded build. Kept out of
+ * the detail query because it costs a GitHub round trip and the page is worth
+ * showing before it resolves. Only meaningful once the build has a commit, so
+ * it waits for one rather than asking about a deployment still being queued.
+ */
+export function useDeploymentChanges(
+  id: MaybeRefOrGetter<string>,
+  opts: { enabled?: MaybeRefOrGetter<boolean> } = {},
+) {
+  return useQuery({
+    queryKey: computed(() => deploymentKeys.changes(toValue(id))),
+    queryFn: () => getDeploymentChanges(toValue(id)),
+    enabled: computed(() => (opts.enabled === undefined ? true : toValue(opts.enabled))),
+    staleTime: 60_000,
   })
 }

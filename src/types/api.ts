@@ -419,6 +419,28 @@ export interface EnvironmentListPage {
   nextCursor: string | null
 }
 
+// GET /deployments/:id/changes — what landed between the previous succeeded
+// build of this environment and this one.
+export interface ChangedCommit {
+  sha: string
+  message: string
+  author: string | null
+  date: string | null
+  url: string
+  issueKey: string | null
+  issueTitle: string | null
+  issueUrl: string | null
+}
+
+export interface DeploymentChanges {
+  previous: { id: string; commitSha: string; createdAt: string } | null
+  commits: ChangedCommit[]
+  totalCommits: number
+  truncated: boolean
+  // Why the range could not be worked out, when it could not.
+  unavailable: 'no-previous' | 'no-commit' | 'unlinked' | 'upstream' | null
+}
+
 export interface DeploymentListPage {
   items: DeploymentListItem[]
   nextCursor: string | null

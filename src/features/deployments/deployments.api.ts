@@ -2,6 +2,7 @@ import { api } from '@/lib/api'
 import type {
   CreateDeploymentInput,
   Deployment,
+  DeploymentChanges,
   DeploymentListPage,
   ListDeploymentsParams,
   MaintenanceActionDef,
@@ -88,4 +89,9 @@ export function runDeploymentAction(deploymentId: string, actionId: string, sign
     signal,
     headers: { Accept: 'text/plain' },
   })
+}
+
+export async function getDeploymentChanges(id: string): Promise<DeploymentChanges> {
+  const { data } = await api.get<DeploymentChanges>(`/deployments/${id}/changes`)
+  return data
 }

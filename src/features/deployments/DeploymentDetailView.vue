@@ -5,6 +5,7 @@ import { isTerminalStatus } from './deployments.status'
 import { isServiceDown, useServiceTones } from './serviceTones'
 import DeploymentHeader from './DeploymentHeader.vue'
 import DeploymentBranches from './DeploymentBranches.vue'
+import DeploymentChanges from './DeploymentChanges.vue'
 import DeploymentFailure from './DeploymentFailure.vue'
 import DeploymentStages from './DeploymentStages.vue'
 import DeploymentServices from './DeploymentServices.vue'
@@ -59,6 +60,8 @@ const webOffline = computed(
         :project-id="deployment.environment?.projectId ?? ''"
         :jira-site-url="deployment.environment?.project?.organization?.atlassianSiteUrl"
       />
+
+      <DeploymentChanges :deployment-id="deployment.id" :has-commit="!!deployment.commitSha" />
 
       <DeploymentStages :stages="deployment.stages ?? []" :is-active="isActive" />
 
