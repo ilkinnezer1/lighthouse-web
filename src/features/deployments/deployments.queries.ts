@@ -7,6 +7,7 @@ import type { CreateDeploymentInput, Deployment, DeploymentStatus } from '@/type
 import {
   actOnService,
   cancelDeployment,
+  checkMerge,
   createDeployment,
   getDeployment,
   getDeploymentActions,
@@ -204,5 +205,17 @@ export function useDeploymentChanges(
     queryFn: () => getDeploymentChanges(toValue(id)),
     enabled: computed(() => (opts.enabled === undefined ? true : toValue(opts.enabled))),
     staleTime: 60_000,
+  })
+}
+
+/**
+ * Dry-run the merge before spending a build on it. A mutation rather than a
+ * query because it is expensive on the worker — a full fetch per call — so it
+ * runs when asked, never on its own.
+ */
+export function useMergeCheck(envId: MaybeRefOrGetter<string>) {
+  return useMutation({
+    mutationFn: (body: { sourceBranch?: string; mergeBranches?: string[] }) =>
+      checkMerge(toValue(envId), body),
   })
 }

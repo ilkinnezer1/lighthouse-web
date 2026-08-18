@@ -6,6 +6,7 @@ import type {
   DeploymentListPage,
   ListDeploymentsParams,
   MaintenanceActionDef,
+  MergeCheckResult,
   ServiceHealth,
   ServiceStats,
 } from '@/types/api'
@@ -93,5 +94,13 @@ export function runDeploymentAction(deploymentId: string, actionId: string, sign
 
 export async function getDeploymentChanges(id: string): Promise<DeploymentChanges> {
   const { data } = await api.get<DeploymentChanges>(`/deployments/${id}/changes`)
+  return data
+}
+
+export async function checkMerge(
+  envId: string,
+  body: { sourceBranch?: string; mergeBranches?: string[] },
+): Promise<MergeCheckResult> {
+  const { data } = await api.post<MergeCheckResult>(`/environments/${envId}/merge-check`, body)
   return data
 }

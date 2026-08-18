@@ -3,11 +3,12 @@ import { computed, ref, watch } from 'vue'
 import { GitMerge, LoaderCircle, RefreshCw, Rocket } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import BranchPicker from './BranchPicker.vue'
+import { useMergeCheck } from './deployments.queries'
 import { useCreateDeployment } from './deployments.queries'
 import { useProjectBranches } from '@/features/projects/projects.queries'
 import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { apiErrorMessage } from '@/lib/api'
-import type { Deployment } from '@/types/api'
+import type { Deployment, MergeCheckResult } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -34,6 +35,18 @@ const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ deployed: [deployment: Deployment] }>()
 
 const createDeployment = useCreateDeployment(() => props.envId)
+const mergeCheck = useMergeCheck(() => props.envId)
+
+// Cleared whenever the branch set changes: a verdict about a different set of
+// branches is worse than no verdict, because it reads as if it still applies.
+const checkResult = ref<MergeCheckResult | null>(null)
+async function onCheckMerge() {
+  checkResult.value = null
+  checkResult.value = await mergeCheck.mutateAsync({
+    sourceBranch: sourceBranch.value || props.defaultBranch || undefined,
+    mergeBranches: mergeBranches.value,
+  })
+}
 
 const sourceBranch = ref('')
 const mergeBranches = ref<string[]>([])
@@ -51,6 +64,10 @@ const branchError = computed(() =>
 )
 
 const branchMeta = computed(() => toBranchMetaMap(branches.value))
+
+watch([sourceBranch, mergeBranches], () => {
+  checkResult.value = null
+})
 
 watch(open, (isOpen) => {
   if (isOpen) {
@@ -177,6 +194,45 @@ async function onDeploy() {
               Branches are merged in order on top of the source. A merge conflict fails the
               deployment.
             </p>
+
+            <div v-if="mergeBranches.length" class="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                :disabled="mergeCheck.isPending.value || !sourceBranch"
+                @click="onCheckMerge"
+              >
+                <LoaderCircle v-if="mergeCheck.isPending.value" class="animate-spin" />
+                <GitMerge v-else class="size-4" />
+                Check for conflicts
+              </Button>
+
+              <!-- Three outcomes, and "could not tell" must not read as "fine". -->
+              <span
+                v-if="checkResult?.mergeable === true"
+                class="text-xs font-medium text-signal-live"
+              >
+                These branches merge cleanly.
+              </span>
+              <span
+                v-else-if="checkResult?.mergeable === false"
+                class="text-xs font-medium text-destructive"
+              >
+                <span class="font-mono">{{ checkResult.branch }}</span> conflicts<template
+                  v-if="checkResult.files?.length"
+                >
+                  in
+                  <span class="font-mono">{{ checkResult.files.join(', ') }}</span></template
+                >. Deploying will fail.
+              </span>
+              <span
+                v-else-if="checkResult && checkResult.mergeable === null"
+                class="text-xs text-muted-foreground"
+              >
+                Could not check — deploy anyway and the build will report any conflict.
+              </span>
+            </div>
           </template>
         </div>
       </div>

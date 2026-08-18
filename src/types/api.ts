@@ -309,6 +309,15 @@ export interface BranchMeta {
 // the meta fields are absent — hence Partial.
 export type RepoBranchWithMeta = RepoBranch & Partial<BranchMeta> & Partial<BranchIssue>
 
+// POST /environments/:id/merge-check — a dry run of the merge a deploy would do.
+// `mergeable: null` means the probe could not run, which is not the same as
+// "no conflicts" and must never be shown as one.
+export interface MergeCheckResult {
+  mergeable: boolean | null
+  branch?: string
+  files?: string[]
+}
+
 export type DeploymentBranchRole = 'SOURCE' | 'MERGE'
 
 export interface DeploymentBranch {
