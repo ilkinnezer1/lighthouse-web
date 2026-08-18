@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import {
+  Boxes,
   Database,
   FolderGit2,
   LogOut,
@@ -10,10 +11,10 @@ import {
   Plug,
   Rocket,
   ScrollText,
-  Sparkles,
-  Timer,
   Search,
+  Sparkles,
   Sun,
+  Timer,
   X,
 } from '@lucide/vue'
 import AppLogo from '@/components/AppLogo.vue'
@@ -70,6 +71,7 @@ const navActive = 'text-ink-1! before:bg-primary! before:h-5!'
 const nav = [
   { to: '/', label: 'Projects', icon: FolderGit2, exact: true },
   { to: '/deployments', label: 'Deployments', icon: Rocket, exact: false },
+  { to: '/environments', label: 'Environments', icon: Boxes, exact: false },
   { to: '/templates', label: 'Templates', icon: Sparkles, exact: false },
   { to: '/scheduled-tasks', label: 'Scheduled tasks', icon: Timer, exact: false },
   { to: '/databases', label: 'Databases', icon: Database, exact: false },

@@ -378,6 +378,47 @@ export interface DeploymentListItem {
   }
 }
 
+// GET /environments — the board's row: an environment plus whatever deployment
+// is currently on it. `latestDeployment` is null for one never deployed.
+export interface EnvironmentListItem {
+  id: string
+  name: string
+  type: EnvironmentType
+  branch: string | null
+  subdomain: string
+  customDomain: string | null
+  active: boolean
+  createdAt: string
+  url: string
+  project: {
+    id: string
+    name: string
+    subdomain: string
+    owner: { username: string }
+    organization: { slug: string; atlassianSiteUrl: string | null }
+  }
+  latestDeployment: {
+    id: string
+    status: DeploymentStatus
+    createdAt: string
+    finishedAt: string | null
+    commitSha: string | null
+    commitMessage: string | null
+    errorSummary: string | null
+    branches: {
+      role: DeploymentBranchRole
+      name: string
+      issueKey: string | null
+      issueTitle: string | null
+    }[]
+  } | null
+}
+
+export interface EnvironmentListPage {
+  items: EnvironmentListItem[]
+  nextCursor: string | null
+}
+
 export interface DeploymentListPage {
   items: DeploymentListItem[]
   nextCursor: string | null

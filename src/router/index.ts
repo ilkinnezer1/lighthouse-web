@@ -52,6 +52,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/features/scheduled-tasks/ScheduledTasksView.vue'),
       },
       {
+        path: 'environments',
+        name: 'environments',
+        component: () => import('@/features/environments/EnvironmentsView.vue'),
+      },
+      {
         path: 'databases',
         name: 'databases',
         component: () => import('@/features/databases/DatabasesView.vue'),
