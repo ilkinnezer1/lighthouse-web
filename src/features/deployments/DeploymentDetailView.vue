@@ -5,6 +5,7 @@ import { isTerminalStatus } from './deployments.status'
 import { isServiceDown, useServiceTones } from './serviceTones'
 import DeploymentHeader from './DeploymentHeader.vue'
 import DeploymentBranches from './DeploymentBranches.vue'
+import DeploymentFailure from './DeploymentFailure.vue'
 import DeploymentStages from './DeploymentStages.vue'
 import DeploymentServices from './DeploymentServices.vue'
 import DeploymentMaintenance from './DeploymentMaintenance.vue'
@@ -51,13 +52,7 @@ const webOffline = computed(
         @refetch="() => refetch()"
       />
 
-      <!-- error summary -->
-      <p
-        v-if="deployment.errorSummary"
-        class="mt-5 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-      >
-        {{ deployment.errorSummary }}
-      </p>
+      <DeploymentFailure :summary="deployment.errorSummary" />
 
       <DeploymentBranches
         :branches="deployment.branches ?? []"
