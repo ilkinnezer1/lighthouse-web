@@ -62,6 +62,7 @@ const webOffline = computed(
       <DeploymentBranches
         :branches="deployment.branches ?? []"
         :project-id="deployment.environment?.projectId ?? ''"
+        :jira-site-url="deployment.environment?.project?.organization?.atlassianSiteUrl"
       />
 
       <DeploymentStages :stages="deployment.stages ?? []" :is-active="isActive" />

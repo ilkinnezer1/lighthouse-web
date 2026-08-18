@@ -3,11 +3,16 @@ import { computed } from 'vue'
 import { GitBranch, GitMerge } from '@lucide/vue'
 import type { DeploymentBranch } from '@/types/api'
 import { useProjectBranches } from '@/features/projects/projects.queries'
-import { toBranchMetaMap } from '@/features/projects/branchMeta'
+import { toBranchIssueMap, toBranchMetaMap } from '@/features/projects/branchMeta'
+import { issueHref, issueLabel } from './issueLabel'
 import { relativeTime } from '@/lib/time'
 import { shortSha } from '@/lib/utils'
 
-const props = defineProps<{ branches: DeploymentBranch[]; projectId: string }>()
+const props = defineProps<{
+  branches: DeploymentBranch[]
+  projectId: string
+  jiraSiteUrl?: string | null
+}>()
 
 const sourceBranch = computed(() => props.branches.find((b) => b.role === 'SOURCE') ?? null)
 const mergeBranches = computed(() => props.branches.filter((b) => b.role === 'MERGE'))
@@ -20,6 +25,16 @@ const branchMetaQuery = useProjectBranches(() => props.projectId, {
 })
 const branchMeta = computed(() => toBranchMetaMap(branchMetaQuery.data.value))
 const metaFor = (name: string) => branchMeta.value[name] ?? null
+
+// The label is the deployment's own snapshot; only the link comes from the live
+// lookup, which is what knows the org's Jira site.
+const branchIssues = computed(() => toBranchIssueMap(branchMetaQuery.data.value))
+const hrefFor = (b: DeploymentBranch) => {
+  if (!b.issueKey) return null
+  // The deployment's own org is the reliable source; the live branch lookup is
+  // a fallback for payloads that predate it, and needs GitHub to have answered.
+  return issueHref(props.jiraSiteUrl, b.issueKey) ?? branchIssues.value[b.name]?.issueUrl ?? null
+}
 </script>
 
 <template>
@@ -31,8 +46,27 @@ const metaFor = (name: string) => branchMeta.value[name] ?? null
         class="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
       >
         <GitBranch class="size-4 shrink-0 text-muted-foreground" />
-        <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
-          {{ sourceBranch.name }}
+        <span class="min-w-0 flex-1">
+          <template v-if="issueLabel(sourceBranch)">
+            <a
+              v-if="hrefFor(sourceBranch)"
+              :href="hrefFor(sourceBranch)!"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="block truncate text-sm text-foreground hover:text-primary hover:underline"
+            >
+              {{ issueLabel(sourceBranch) }}
+            </a>
+            <span v-else class="block truncate text-sm text-foreground">
+              {{ issueLabel(sourceBranch) }}
+            </span>
+            <span class="block truncate font-mono text-xs text-muted-foreground">
+              {{ sourceBranch.name }}
+            </span>
+          </template>
+          <span v-else class="block truncate font-mono text-sm text-foreground">
+            {{ sourceBranch.name }}
+          </span>
         </span>
         <span
           v-if="metaFor(sourceBranch.name)?.lastCommitDate"
@@ -51,8 +85,21 @@ const metaFor = (name: string) => branchMeta.value[name] ?? null
         class="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
       >
         <GitMerge class="size-4 shrink-0 text-muted-foreground" />
-        <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
-          {{ b.name }}
+        <span class="min-w-0 flex-1">
+          <template v-if="issueLabel(b)">
+            <a
+              v-if="hrefFor(b)"
+              :href="hrefFor(b)!"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="block truncate text-sm text-foreground hover:text-primary hover:underline"
+            >
+              {{ issueLabel(b) }}
+            </a>
+            <span v-else class="block truncate text-sm text-foreground">{{ issueLabel(b) }}</span>
+            <span class="block truncate font-mono text-xs text-muted-foreground">{{ b.name }}</span>
+          </template>
+          <span v-else class="block truncate font-mono text-sm text-foreground">{{ b.name }}</span>
         </span>
         <span
           v-if="(metaFor(b.name)?.aheadBy ?? 0) > 0"

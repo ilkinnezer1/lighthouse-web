@@ -3,17 +3,21 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import type { OrgRole } from '@/types/api'
 import {
   changeMemberRole,
+  clearOrgJiraSite,
   createOrg,
   deleteOrg,
+  getOrgJira,
   listMembers,
   listOrgs,
   removeMember,
   renameOrg,
+  setOrgJiraSite,
 } from './orgs.api'
 
 export const orgKeys = {
   all: ['orgs'] as const,
   members: (orgId: string) => ['orgs', orgId, 'members'] as const,
+  jira: (orgId: string) => ['orgs', orgId, 'jira'] as const,
 }
 
 export function useOrgs() {
@@ -73,5 +77,32 @@ export function useRemoveMember(orgId: MaybeRefOrGetter<string>) {
       // Leaving an org drops it from the caller's list.
       void qc.invalidateQueries({ queryKey: orgKeys.all })
     },
+  })
+}
+
+export function useOrgJira(
+  orgId: MaybeRefOrGetter<string>,
+  opts: { enabled?: MaybeRefOrGetter<boolean> } = {},
+) {
+  return useQuery({
+    queryKey: computed(() => orgKeys.jira(toValue(orgId))),
+    queryFn: () => getOrgJira(toValue(orgId)),
+    enabled: computed(() => (opts.enabled === undefined ? true : toValue(opts.enabled))),
+  })
+}
+
+export function useSetOrgJiraSite(orgId: MaybeRefOrGetter<string>) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (cloudId: string) => setOrgJiraSite(toValue(orgId), cloudId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: orgKeys.jira(toValue(orgId)) }),
+  })
+}
+
+export function useClearOrgJiraSite(orgId: MaybeRefOrGetter<string>) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => clearOrgJiraSite(toValue(orgId)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: orgKeys.jira(toValue(orgId)) }),
   })
 }

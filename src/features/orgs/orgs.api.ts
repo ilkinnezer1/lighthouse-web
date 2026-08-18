@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { OrgMember, OrgRole, OrgSummary, Organization } from '@/types/api'
+import type { OrgJiraSettings, OrgMember, OrgRole, OrgSummary, Organization } from '@/types/api'
 
 export async function listOrgs() {
   const { data } = await api.get<Organization[]>('/orgs')
@@ -31,4 +31,23 @@ export async function changeMemberRole(orgId: string, userId: string, role: OrgR
 
 export async function removeMember(orgId: string, userId: string) {
   await api.delete(`/orgs/${orgId}/members/${userId}`)
+}
+
+export async function getOrgJira(orgId: string) {
+  const { data } = await api.get<OrgJiraSettings>(`/orgs/${orgId}/jira`)
+  return data
+}
+
+// Only the cloud id travels — the server reads the site URL back from Atlassian
+// so the link shown to every member is one this caller was allowed to see.
+export async function setOrgJiraSite(orgId: string, cloudId: string) {
+  const { data } = await api.put<{ site: { cloudId: string; url: string } }>(
+    `/orgs/${orgId}/jira`,
+    { cloudId },
+  )
+  return data
+}
+
+export async function clearOrgJiraSite(orgId: string) {
+  await api.delete(`/orgs/${orgId}/jira`)
 }

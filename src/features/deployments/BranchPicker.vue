@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Check, Search } from '@lucide/vue'
-import type { BranchMeta, RepoBranch } from '@/types/api'
+import type { BranchIssue, BranchMeta, RepoBranch } from '@/types/api'
+import { issueLabel } from './issueLabel'
 import { relativeTime } from '@/lib/time'
 import { shortSha } from '@/lib/utils'
 
 const props = defineProps<{
-  branches: RepoBranch[]
+  branches: (RepoBranch & Partial<BranchIssue>)[]
   exclude?: string
   loading?: boolean
   error?: string | null
@@ -21,7 +22,12 @@ const visible = computed(() => {
   const q = search.value.trim().toLowerCase()
   return props.branches
     .filter((b) => b.name !== props.exclude)
-    .filter((b) => !q || b.name.toLowerCase().includes(q))
+    .filter((b) => {
+      if (!q) return true
+      // Searching by ticket number has to work now that a row can read as one.
+      const label = issueLabel(b)
+      return b.name.toLowerCase().includes(q) || !!label?.toLowerCase().includes(q)
+    })
 })
 
 function toggle(name: string) {
@@ -47,7 +53,8 @@ const metaFor = (name: string) => props.meta?.[name] ?? null
       />
     </div>
 
-    <div class="max-h-56 overflow-auto p-1">
+    <!-- pr-3 clears the 8px overlay scrollbar, which otherwise sits on the sha. -->
+    <div class="max-h-56 overflow-auto p-1 pr-3">
       <p v-if="loading" class="px-2 py-6 text-center text-sm text-muted-foreground">
         Loading branches…
       </p>
@@ -78,7 +85,13 @@ const metaFor = (name: string) => props.meta?.[name] ?? null
         >
           <Check v-if="isSelected(b.name)" class="size-3" />
         </span>
-        <span class="min-w-0 flex-1 truncate font-mono text-sm text-foreground">{{ b.name }}</span>
+        <span class="min-w-0 flex-1">
+          <template v-if="issueLabel(b)">
+            <span class="block truncate text-sm text-foreground">{{ issueLabel(b) }}</span>
+            <span class="block truncate font-mono text-xs text-muted-foreground">{{ b.name }}</span>
+          </template>
+          <span v-else class="block truncate font-mono text-sm text-foreground">{{ b.name }}</span>
+        </span>
         <template v-if="metaFor(b.name)">
           <span
             v-if="(metaFor(b.name)?.aheadBy ?? 0) > 0"

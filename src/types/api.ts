@@ -289,6 +289,15 @@ export interface RepoBranch {
   sha: string
 }
 
+// The Jira issue a branch name refers to. Present only when the branch names a
+// ticket AND the viewer's Atlassian token could resolve it; `issueTitle` is null
+// when the key parsed but Jira had no answer for it.
+export interface BranchIssue {
+  issueKey: string
+  issueTitle: string | null
+  issueUrl: string | null
+}
+
 export interface BranchMeta {
   aheadBy: number | null
   behindBy: number | null
@@ -298,7 +307,7 @@ export interface BranchMeta {
 // The branches endpoint returns name + sha, plus the BranchMeta fields when a
 // `base` is supplied (deltas relative to that source branch). Without a base,
 // the meta fields are absent — hence Partial.
-export type RepoBranchWithMeta = RepoBranch & Partial<BranchMeta>
+export type RepoBranchWithMeta = RepoBranch & Partial<BranchMeta> & Partial<BranchIssue>
 
 export type DeploymentBranchRole = 'SOURCE' | 'MERGE'
 
@@ -309,6 +318,10 @@ export interface DeploymentBranch {
   name: string
   sha: string | null
   ordinal: number
+  // Snapshotted when the deploy was enqueued, so it still reads as its ticket
+  // after the ticket is renamed or the org disconnects Jira.
+  issueKey?: string | null
+  issueTitle?: string | null
 }
 
 export interface Deployment {
@@ -329,7 +342,15 @@ export interface Deployment {
   branches?: DeploymentBranch[]
   stages?: DeploymentStage[]
   services?: Service[]
-  environment?: Environment
+  // The detail payload nests the project and its org, which is where the Jira
+  // site lives — so a stored branch can be linked without a second lookup.
+  environment?: Environment & {
+    project?: {
+      id: string
+      name: string
+      organization?: { slug: string; atlassianSiteUrl: string | null }
+    }
+  }
 }
 
 export interface DeploymentListItem {
@@ -352,6 +373,7 @@ export interface DeploymentListItem {
       name: string
       subdomain: string
       owner: { username: string }
+      organization?: { slug: string; atlassianSiteUrl: string | null }
     }
   }
 }
@@ -542,12 +564,36 @@ export interface UpdateProjectInput {
   buildConfig?: BuildConfig
 }
 
-// A connected Git provider account (GitHub only in v1). Never carries the token.
-export interface Connection {
+// A connected provider account. Never carries the token.
+export interface GithubConnection {
   provider: 'github'
   accountLogin: string
   scopes: string[]
   connectedAt: string
+}
+
+// A Jira site the connected Atlassian account can reach.
+export interface JiraSite {
+  cloudId: string
+  name: string
+  url: string
+}
+
+export interface AtlassianConnection {
+  provider: 'atlassian'
+  accountEmail: string
+  scopes: string[]
+  connectedAt: string
+  sites: JiraSite[]
+}
+
+export type Connection = GithubConnection | AtlassianConnection
+
+// GET /orgs/:id/jira — the org's chosen site, plus what the caller can pick from.
+export interface OrgJiraSettings {
+  site: { cloudId: string; url: string | null } | null
+  availableSites: JiraSite[]
+  connected: boolean
 }
 
 export interface RepoSummary {

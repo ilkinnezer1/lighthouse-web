@@ -30,10 +30,18 @@ export async function disconnectGithub(): Promise<void> {
   await api.delete('/integrations/github')
 }
 
+export async function disconnectAtlassian(): Promise<void> {
+  await api.delete('/integrations/atlassian')
+}
+
 // Full-page navigation — the browser must hit the server and follow its 302 to
-// GitHub's consent screen, so this is a top-level nav, never an XHR.
+// the provider's consent screen, so these are top-level navs, never XHRs.
 export function connectGithub(): void {
   window.location.assign('/api/integrations/github/connect')
+}
+
+export function connectAtlassian(): void {
+  window.location.assign('/api/integrations/atlassian/connect')
 }
 
 // A 428 from the repos endpoint means "GitHub not connected" — surface the

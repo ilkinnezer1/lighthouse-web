@@ -6,7 +6,7 @@ import { connectGithub } from './integrations.api'
 import { useDisconnectGithub } from './integrations.queries'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
-import type { Connection } from '@/types/api'
+import type { GithubConnection } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 const props = defineProps<{
-  connection?: Connection | null
+  connection?: GithubConnection | null
   loading?: boolean
   notConfigured?: boolean
 }>()

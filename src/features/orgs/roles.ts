@@ -38,6 +38,7 @@ export type Capability =
   | 'members.manage'
   | 'audit.read'
   | 'notifications.manage'
+  | 'jira.manage'
   | 'org.update'
   | 'org.delete'
   | 'org.transfer'
@@ -50,6 +51,7 @@ const ADMIN: Capability[] = [
   'members.manage',
   'audit.read',
   'notifications.manage',
+  'jira.manage',
 ]
 const OWNER: Capability[] = ['org.update', 'org.delete', 'org.transfer']
 

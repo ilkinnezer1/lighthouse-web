@@ -22,6 +22,7 @@ const ALL_CAPS: Capability[] = [
   'members.manage',
   'audit.read',
   'notifications.manage',
+  'jira.manage',
   'org.update',
   'org.delete',
   'org.transfer',
@@ -54,6 +55,7 @@ describe('roleCan', () => {
     expect(roleCan('ADMIN', 'members.manage')).toBe(true)
     expect(roleCan('ADMIN', 'project.delete')).toBe(true)
     expect(roleCan('ADMIN', 'audit.read')).toBe(true)
+    expect(roleCan('ADMIN', 'jira.manage')).toBe(true)
     expect(roleCan('ADMIN', 'org.update')).toBe(false)
     expect(roleCan('ADMIN', 'org.delete')).toBe(false)
     expect(roleCan('ADMIN', 'org.transfer')).toBe(false)

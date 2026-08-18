@@ -7,6 +7,7 @@ import { clockTime, relativeTime } from '@/lib/time'
 import { shortSha } from '@/lib/utils'
 import { SignalDot } from '@/components/ui/section'
 import type { DeploymentBranch, DeploymentStatus } from '@/types/api'
+import { issueLabel } from './issueLabel'
 
 const props = defineProps<{
   to: string
@@ -22,6 +23,9 @@ const props = defineProps<{
 
 const source = computed(() => props.branches?.find((b) => b.role === 'SOURCE') ?? null)
 const mergeCount = computed(() => props.branches?.filter((b) => b.role === 'MERGE').length ?? 0)
+// The feed row is dense, so the chip carries the bare ticket number and the
+// full `KEY: Title` rides along as its tooltip.
+const sourceIssue = computed(() => issueLabel(source.value))
 const timeLabel = computed(() =>
   props.time === 'relative' ? relativeTime(props.createdAt) : clockTime(props.createdAt),
 )
@@ -50,10 +54,11 @@ const timeLabel = computed(() =>
 
     <span
       v-if="source"
+      :title="sourceIssue ? `${sourceIssue} (${source.name})` : source.name"
       class="hidden shrink-0 items-center gap-1 font-mono text-xs text-ink-4 md:inline-flex"
     >
       <GitBranch class="size-3.5" />
-      {{ source.name }}
+      {{ source.issueKey ?? source.name }}
     </span>
     <span
       v-if="mergeCount > 0"
