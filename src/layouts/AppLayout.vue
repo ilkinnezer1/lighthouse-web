@@ -21,11 +21,12 @@ import AppLogo from '@/components/AppLogo.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/lib/theme'
+import { disconnectNotificationsSocket } from '@/lib/socket'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { useCan } from '@/features/orgs/useCan'
 import OrgSwitcher from '@/features/orgs/OrgSwitcher.vue'
-import InvitationsInbox from '@/features/invitations/InvitationsInbox.vue'
+import InboxBell from '@/features/inbox/InboxBell.vue'
 
 const auth = useAuthStore()
 const activeOrg = useActiveOrgStore()
@@ -55,6 +56,9 @@ const initial = computed(() => {
 
 async function onLogout() {
   await auth.logout()
+  // The notifications socket is authenticated per user; leaving it open would
+  // stream the previous session's inbox to the next person who signs in here.
+  disconnectNotificationsSocket()
   // Clear the persisted scope so the next user never inherits it.
   activeOrg.reset()
   await router.replace({ name: 'login' })
@@ -198,7 +202,7 @@ const nav = [
             <Sun v-if="isDark" />
             <Moon v-else />
           </Button>
-          <InvitationsInbox />
+          <InboxBell />
         </div>
       </header>
       <main class="flex-1 overflow-y-auto">

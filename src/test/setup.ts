@@ -1,5 +1,5 @@
 import { afterEach, vi } from 'vitest'
-import { disconnectDeploymentsSocket } from '@/lib/socket'
+import { disconnectDeploymentsSocket, disconnectNotificationsSocket } from '@/lib/socket'
 import { resetSockets } from './socket.mock'
 
 vi.mock('socket.io-client', () => import('./socket.mock'))
@@ -40,6 +40,7 @@ HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement['getC
 
 afterEach(() => {
   disconnectDeploymentsSocket()
+  disconnectNotificationsSocket()
   resetSockets()
   localStorage.clear()
   document.body.innerHTML = ''

@@ -17,3 +17,23 @@ export function disconnectDeploymentsSocket() {
   socket?.disconnect()
   socket = null
 }
+
+// `/notifications` namespace. Unlike `/deployments` there is nothing to
+// subscribe to: the room is the authenticated user, known at handshake, so the
+// gateway joins it on connect.
+let notifications: Socket | null = null
+
+export function getNotificationsSocket(): Socket {
+  if (!notifications) {
+    notifications = io('/notifications', {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+    })
+  }
+  return notifications
+}
+
+export function disconnectNotificationsSocket() {
+  notifications?.disconnect()
+  notifications = null
+}
