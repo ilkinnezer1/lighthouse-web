@@ -20,6 +20,9 @@ import DomainSection from '@/features/domains/DomainSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
 import ScheduledTasksSection from '@/features/scheduled-tasks/ScheduledTasksSection.vue'
 import EnvironmentLockControl from '@/features/environments/EnvironmentLockControl.vue'
+import EnvironmentFindings from '@/features/findings/EnvironmentFindings.vue'
+import { useEnvironmentFindings } from '@/features/findings/findings.queries'
+import { openCount } from '@/features/findings/findings.format'
 import { useCan } from '@/features/orgs/useCan'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
@@ -84,6 +87,7 @@ const canManageEnv = useCan('env.manage')
  */
 const TABS = [
   { key: 'deployments', label: 'Deployments' },
+  { key: 'findings', label: 'Findings' },
   { key: 'data', label: 'Data' },
   { key: 'config', label: 'Config' },
   { key: 'files', label: 'Files' },
@@ -101,13 +105,24 @@ const tab = computed({
   set: (key: string) => void router.replace({ query: { ...route.query, tab: key } }),
 })
 
+// Unfiltered, so the tab keeps counting open findings while the section below
+// is narrowed to one status.
+const { data: findings } = useEnvironmentFindings(
+  () => props.envId,
+  () => undefined,
+)
+const openFindings = computed(() => openCount(findings.value))
+
 const tabsWithCounts = computed(() =>
   TABS.map((t) =>
     t.key === 'deployments'
       ? { ...t, count: deployments.value?.length ?? null }
-      : t.key === 'data'
-        ? { ...t, count: databases.value?.length ?? null }
-        : t,
+      : t.key === 'findings'
+        ? // A zero here would be noise on the tab of a healthy environment.
+          { ...t, count: openFindings.value || null }
+        : t.key === 'data'
+          ? { ...t, count: databases.value?.length ?? null }
+          : t,
   ),
 )
 </script>
@@ -181,6 +196,8 @@ const tabsWithCounts = computed(() =>
         />
       </div>
     </section>
+
+    <EnvironmentFindings v-if="tab === 'findings'" :env-id="envId" />
 
     <template v-if="tab === 'config'">
       <DomainSection :env-id="envId" class="mt-8 block" />

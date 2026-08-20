@@ -55,6 +55,18 @@ describe('notificationHeadline', () => {
     ).toBe('Your database snapshot on production failed')
   })
 
+  // Two sides of the same round trip: one goes to whoever deployed the build,
+  // the other back to whoever filed against it.
+  it('addresses both halves of a finding to the person who owns it', () => {
+    const c = ctx({ environmentName: 'staging' })
+    expect(notificationHeadline(notification({ kind: 'finding.created', context: c }))).toBe(
+      'Someone found a bug on your deploy to staging',
+    )
+    expect(notificationHeadline(notification({ kind: 'finding.resolved', context: c }))).toBe(
+      'Your finding on staging was resolved',
+    )
+  })
+
   it('falls back to the project when there is no environment', () => {
     const c = ctx({ projectName: 'webhook-test-1' })
     expect(notificationHeadline(notification({ context: c }))).toBe(

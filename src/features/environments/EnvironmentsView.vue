@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ExternalLink, RotateCcw } from '@lucide/vue'
 import { useEnvironmentsFeed } from './environments.queries'
 import EnvironmentLockBadge from './EnvironmentLockBadge.vue'
+import FindingsFlag from '@/features/findings/FindingsFlag.vue'
 import {
   environmentBranch,
   environmentTicket,
@@ -186,6 +187,12 @@ function goToEnvironment(e: EnvironmentListItem) {
                    columns below, so an unlocked row does not shift the rest. -->
               <span class="hidden w-36 shrink-0 md:block">
                 <EnvironmentLockBadge :lock="e.lock" :current-user-id="auth.user?.id" />
+              </span>
+
+              <!-- The row's third answer, next to what is on it and who is on
+                   it: whether anything is wrong with it. -->
+              <span class="hidden w-20 shrink-0 md:block">
+                <FindingsFlag :count="e.openFindingCount" />
               </span>
 
               <!-- Reserved even when empty: a column that appears only on some

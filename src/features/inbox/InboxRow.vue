@@ -7,6 +7,8 @@ import {
   CircleSlash,
   CircleX,
   Database,
+  Flag,
+  FlagOff,
   Lock,
   LockOpen,
 } from '@lucide/vue'
@@ -34,6 +36,8 @@ const ICONS: Record<string, typeof CircleCheck> = {
   'lock.overridden': LockOpen,
   'database.provision_failed': Database,
   'database.snapshot_failed': Database,
+  'finding.created': Flag,
+  'finding.resolved': FlagOff,
 }
 
 const TONE_CLASS: Record<InboxTone, string> = {
