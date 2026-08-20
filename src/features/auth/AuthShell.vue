@@ -8,8 +8,7 @@ defineProps<{ title: string; subtitle?: string }>()
   <div class="grid min-h-svh lg:grid-cols-[1.05fr_1fr]">
     <!-- beacon panel -->
     <aside
-      class="relative hidden flex-col justify-between overflow-hidden border-r border-border p-10 lg:flex"
-      style="background: #090c14"
+      class="dark-surface relative hidden flex-col justify-between overflow-hidden border-r border-border p-10 lg:flex"
     >
       <div
         class="pointer-events-none absolute -top-28 left-1/3 h-110 w-110 -translate-x-1/2 rounded-full bg-primary/15 blur-[130px]"
