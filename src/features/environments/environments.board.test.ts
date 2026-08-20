@@ -27,6 +27,7 @@ function env(over: Partial<EnvironmentListItem> = {}): EnvironmentListItem {
     },
     latestDeployment: null,
     lock: null,
+    openFindingCount: 0,
     ...over,
   }
 }

@@ -191,6 +191,8 @@ export type InboxKind =
   | 'lock.overridden'
   | 'database.provision_failed'
   | 'database.snapshot_failed'
+  | 'finding.created'
+  | 'finding.resolved'
 
 /** Flat and all-optional: enough to write a sentence and to group by subject. */
 export interface NotificationContext {
@@ -200,6 +202,7 @@ export interface NotificationContext {
   environmentName?: string
   deploymentId?: string
   commitSha?: string
+  findingId?: string
 }
 
 // `AppNotification`, not `Notification` — the DOM global of that name is used
@@ -258,12 +261,16 @@ export interface MaintenanceActionConfig {
   destructive?: boolean
 }
 
-export interface EnvironmentLockHolder {
+// A person, as the API hands one back on anything they did: a lock they hold,
+// a finding they filed or resolved. One shape so one name-fallback serves all.
+export interface UserRef {
   id: string
   username: string
   displayName: string | null
   email: string
 }
+
+export type EnvironmentLockHolder = UserRef
 
 export interface EnvironmentLock {
   lockedBy: EnvironmentLockHolder
@@ -498,6 +505,8 @@ export interface EnvironmentListItem {
     }[]
   } | null
   lock: EnvironmentLock | null
+  // Aggregated by the board's own query — a per-row fetch would be 30 requests.
+  openFindingCount: number
 }
 
 export interface EnvironmentListPage {
@@ -538,6 +547,61 @@ export interface ListDeploymentsParams {
   status?: DeploymentStatus
   projectId?: string
   orgId?: string
+}
+
+// ── findings ────────────────────────────────────────────────────────────────
+// A bug QA hit, pinned to the build it was seen on. Never to an environment:
+// "broken on staging" stops being true the moment staging moves.
+
+export type FindingStatus = 'OPEN' | 'FIXED' | 'CANNOT_REPRODUCE'
+
+/**
+ * Whether the runtime logs could be grabbed at all. `UNAVAILABLE` means nobody
+ * looked at the logs (container gone, worker unreachable); `CAPTURED` with
+ * empty text means the app genuinely wrote nothing. Those read differently.
+ */
+export type LogSnapshotStatus = 'CAPTURED' | 'UNAVAILABLE'
+
+/** The build a finding is pinned to, on both ends of its life. */
+export interface FindingBuild {
+  id: string
+  status: DeploymentStatus
+  commitSha: string | null
+  commitMessage: string | null
+  createdAt: string
+}
+
+export interface Finding {
+  id: string
+  title: string
+  body: string | null
+  status: FindingStatus
+  createdAt: string
+  updatedAt: string
+  reportedBy: UserRef | null
+  resolvedBy: UserRef | null
+  resolvedAt: string | null
+  // Always present, in every response: without it a finding cannot say which
+  // code was running, which is the only reason it is worth filing.
+  foundOn: FindingBuild
+  fixedIn: FindingBuild | null
+  logSnapshotStatus: LogSnapshotStatus
+}
+
+// GET /findings/:id — the lists omit the log text; a 20KB blob per row would
+// bloat every deployment and environment list to pay for a rarely-opened panel.
+export interface FindingDetail extends Finding {
+  logSnapshot: string | null
+  logSnapshotTruncated: boolean
+}
+
+export interface CreateFindingInput {
+  title: string
+  body?: string
+}
+
+export interface UpdateFindingInput {
+  status: FindingStatus
 }
 
 export interface ManagedDatabase {

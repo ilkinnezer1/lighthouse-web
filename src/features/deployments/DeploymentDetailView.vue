@@ -6,6 +6,7 @@ import { isServiceDown, useServiceTones } from './serviceTones'
 import DeploymentHeader from './DeploymentHeader.vue'
 import DeploymentBranches from './DeploymentBranches.vue'
 import DeploymentChanges from './DeploymentChanges.vue'
+import DeploymentFindings from '@/features/findings/DeploymentFindings.vue'
 import DeploymentFailure from './DeploymentFailure.vue'
 import DeploymentStages from './DeploymentStages.vue'
 import DeploymentServices from './DeploymentServices.vue'
@@ -62,6 +63,8 @@ const webOffline = computed(
       />
 
       <DeploymentChanges :deployment-id="deployment.id" :has-commit="!!deployment.commitSha" />
+
+      <DeploymentFindings :deployment="deployment" />
 
       <DeploymentStages :stages="deployment.stages ?? []" :is-active="isActive" />
 

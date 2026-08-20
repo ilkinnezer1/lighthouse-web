@@ -14,6 +14,8 @@ const TONES: Record<string, InboxTone> = {
   'lock.overridden': 'warn',
   'database.provision_failed': 'error',
   'database.snapshot_failed': 'error',
+  'finding.created': 'warn',
+  'finding.resolved': 'ok',
 }
 
 // Only the two that genuinely interrupt. A tray that toasts every event trains
@@ -84,6 +86,12 @@ export function notificationHeadline(n: AppNotification): string {
       return `Your database${where(c, 'on')} failed to provision`
     case 'database.snapshot_failed':
       return `Your database snapshot${where(c, 'on')} failed`
+    // Addressed to whoever deployed the build it was found on, and to whoever
+    // filed it — so both read as being about your own work, not a room's.
+    case 'finding.created':
+      return `Someone found a bug on your deploy${where(c, 'to')}`
+    case 'finding.resolved':
+      return `Your finding${where(c, 'on')} was resolved`
     default:
       return n.title
   }
@@ -100,6 +108,8 @@ const PLURAL: Record<string, (n: number, on: string) => string> = {
   'lock.overridden': (n, on) => `Your lock${on} was overridden ${n} times`,
   'database.provision_failed': (n, on) => `${n} databases failed to provision${on}`,
   'database.snapshot_failed': (n, on) => `${n} database snapshots failed${on}`,
+  'finding.created': (n, on) => `${n} findings were reported${on}`,
+  'finding.resolved': (n, on) => `${n} of your findings${on} were resolved`,
 }
 
 /** "3 deploys failed on webhook-test-1" — one row instead of three. */
