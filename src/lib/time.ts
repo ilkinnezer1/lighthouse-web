@@ -56,3 +56,29 @@ export function clockTime(iso: string): string {
     hour12: false,
   })
 }
+
+/**
+ * Compact age for a dense row: `just now`, `4m ago`, `3h ago`, `2d ago`, then an
+ * absolute date. Takes `now` so a caller on the shared clock re-renders without
+ * its own timer; deliberately not `relativeTime`, whose "4 minutes ago" is too
+ * wide for an inbox row.
+ */
+export function shortAgo(iso: string, now: number = Date.now()): string {
+  const at = Date.parse(iso)
+  if (!Number.isFinite(at)) return ''
+  const secs = Math.floor((now - at) / 1000)
+  if (secs < 45) return 'just now'
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${Math.max(1, mins)}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 7) return `${days}d ago`
+  const d = new Date(at)
+  const sameYear = d.getFullYear() === new Date(now).getFullYear()
+  return d.toLocaleDateString('en', {
+    month: 'short',
+    day: 'numeric',
+    year: sameYear ? undefined : 'numeric',
+  })
+}

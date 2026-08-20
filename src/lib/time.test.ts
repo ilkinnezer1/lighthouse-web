@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clockTime, dayLabel, durationLabel, relativeTime } from './time'
+import { clockTime, dayLabel, durationLabel, relativeTime, shortAgo } from './time'
 
 const NOW = new Date('2026-08-11T14:30:00.000Z')
 
@@ -114,5 +114,45 @@ describe('clockTime', () => {
   it('renders midnight as 24:00', () => {
     expect(clockTime('2026-08-11T00:00:00')).toBe('24:00')
     expect(clockTime('2026-08-11T00:30:00')).toBe('24:30')
+  })
+})
+
+describe('shortAgo', () => {
+  const now = Date.parse('2026-08-11T14:30:00.000Z')
+  const at = (iso: string) => shortAgo(iso, now)
+
+  it('says "just now" rather than counting the first seconds', () => {
+    expect(at('2026-08-11T14:30:00Z')).toBe('just now')
+    expect(at('2026-08-11T14:29:16Z')).toBe('just now')
+  })
+
+  it('counts whole minutes below an hour', () => {
+    expect(at('2026-08-11T14:29:14Z')).toBe('1m ago')
+    expect(at('2026-08-11T14:28:00Z')).toBe('2m ago')
+    expect(at('2026-08-11T13:31:00Z')).toBe('59m ago')
+  })
+
+  it('counts whole hours below a day', () => {
+    expect(at('2026-08-11T13:30:00Z')).toBe('1h ago')
+    expect(at('2026-08-10T14:31:00Z')).toBe('23h ago')
+  })
+
+  it('counts whole days below a week', () => {
+    expect(at('2026-08-10T14:30:00Z')).toBe('1d ago')
+    expect(at('2026-08-05T14:30:00Z')).toBe('6d ago')
+  })
+
+  it('switches to an absolute date past a week, adding the year only when it differs', () => {
+    expect(at('2026-08-04T14:30:00Z')).toBe('Aug 4')
+    expect(at('2025-12-25T14:30:00Z')).toBe('Dec 25, 2025')
+  })
+
+  // Clock skew between the API and the browser must not print "in 3 minutes".
+  it('clamps a future timestamp to "just now"', () => {
+    expect(at('2026-08-11T14:35:00Z')).toBe('just now')
+  })
+
+  it('renders nothing for an unparseable timestamp', () => {
+    expect(at('not-a-date')).toBe('')
   })
 })

@@ -173,6 +173,62 @@ export interface UpdateNotificationChannelInput {
   events?: string[]
 }
 
+// ── in-app inbox ────────────────────────────────────────────────────────────
+// A per-user notification, as opposed to NotificationChannel above, which is
+// org-scoped and can only shout into a room.
+
+/**
+ * The canonical event vocabulary the inbox shares with notification channels —
+ * NOT the raw `event_outbox` types, which use a second naming scheme the API
+ * maps from. `InboxKind`, not `NotificationKind`: that name is taken by a
+ * channel's transport (Slack/Discord/webhook).
+ */
+export type InboxKind =
+  | 'deploy.succeeded'
+  | 'deploy.failed'
+  | 'deploy.cancelled'
+  | 'deploy.skipped_locked'
+  | 'lock.overridden'
+  | 'database.provision_failed'
+  | 'database.snapshot_failed'
+
+/** Flat and all-optional: enough to write a sentence and to group by subject. */
+export interface NotificationContext {
+  projectId?: string
+  projectName?: string
+  environmentId?: string
+  environmentName?: string
+  deploymentId?: string
+  commitSha?: string
+}
+
+// `AppNotification`, not `Notification` — the DOM global of that name is used
+// for real by useDeployWatch, and shadowing it there would be a silent trap.
+export interface AppNotification {
+  id: string
+  // Widened past InboxKind so a kind added by the API before the web knows it
+  // still renders (falling back to the server-authored `title`).
+  kind: InboxKind | (string & {})
+  title: string
+  body: string | null
+  link: string | null
+  context: NotificationContext | null
+  readAt: string | null
+  createdAt: string
+}
+
+export interface NotificationFeedPage {
+  items: AppNotification[]
+  nextCursor: string | null
+  unreadCount: number
+}
+
+/** `notification.created` on the `/notifications` namespace. */
+export interface NotificationCreatedEvent {
+  notification: AppNotification
+  unreadCount: number
+}
+
 // A volume as it actually exists in Docker. sizeBytes is -1 when Docker could
 // not report a size, so the UI shows "unknown" rather than a misleading 0.
 export interface VolumeInfo {
