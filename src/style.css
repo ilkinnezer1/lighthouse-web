@@ -266,6 +266,32 @@
   }
 
   /*
+   * A surface that stays dark in BOTH themes. Pinning only the background is
+   * the trap: descendants keep resolving the ambient ramp, so in light mode
+   * `text-foreground` paints near-black ink on a near-black panel. Re-declaring
+   * the ramp here means the whole subtree — text, icon fills, hairlines —
+   * inherits the dark values without any component knowing where it sits.
+   */
+  .dark-surface {
+    background: hsl(224 38% 6%);
+
+    --background: hsl(0 0% 7%);
+    --foreground: hsl(0 0% 93%);
+
+    --ink-1: hsl(0 0% 93%);
+    --ink-2: hsl(0 0% 75%);
+    --ink-3: hsl(0 0% 56%);
+    --ink-4: hsl(0 0% 41%);
+
+    --muted-foreground: var(--ink-3);
+    --rule: hsl(0 0% 17%);
+    --border: var(--rule);
+    --primary: hsl(38 92% 58%);
+
+    color: var(--foreground);
+  }
+
+  /*
    * The log pane owns its palette in BOTH themes. A terminal that flips to
    * white is wrong, and inheriting `--foreground` inside a dark box renders
    * black-on-black in light mode.

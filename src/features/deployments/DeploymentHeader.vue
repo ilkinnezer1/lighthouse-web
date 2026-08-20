@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Ban,
@@ -19,7 +19,10 @@ import {
 } from './deployments.queries'
 import { useDeployWatch } from './useDeployWatch'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
-import type { Deployment } from '@/types/api'
+import DeployLockedDialog from './DeployLockedDialog.vue'
+import { lockConflict } from '@/features/environments/environments.lock'
+import { useInvalidateLockState } from '@/features/environments/environments.queries'
+import type { Deployment, EnvironmentLock } from '@/types/api'
 import { useProject } from '@/features/projects/projects.queries'
 import { durationLabel, relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
@@ -91,24 +94,59 @@ async function onCancel() {
   }
 }
 
-async function onRedeploy() {
+// Redeploy and rollback both land on a locked environment the same way, so the
+// refusal is held once and replayed to whichever one was asked for.
+const lockedBy = ref<EnvironmentLock | null>(null)
+const refusedAction = ref<'redeploy' | 'rollback' | null>(null)
+const invalidateLockState = useInvalidateLockState()
+
+const overridePending = computed(() => redeploy.isPending.value || rollback.isPending.value)
+const overrideVerb = computed(() => (refusedAction.value === 'rollback' ? 'Roll back' : 'Redeploy'))
+
+function onLockRefusal(e: unknown, action: 'redeploy' | 'rollback'): boolean {
+  const lock = lockConflict(e)
+  if (!lock) return false
+  lockedBy.value = lock
+  refusedAction.value = action
+  invalidateLockState(projectId.value || undefined)
+  return true
+}
+
+async function runRedeploy(overrideLock: boolean) {
   try {
-    const created = await redeploy.mutateAsync(props.deployment.id)
+    const created = await redeploy.mutateAsync({ id: props.deployment.id, overrideLock })
+    lockedBy.value = null
     toast.success('Redeploy started')
     void router.push({ name: 'deployment', params: { id: created.id } })
   } catch (e) {
+    if (onLockRefusal(e, 'redeploy')) return
     toast.error(apiErrorMessage(e, 'Could not redeploy'))
   }
 }
 
-async function onRollback() {
+async function runRollback(overrideLock: boolean) {
   try {
-    const created = await rollback.mutateAsync(props.deployment.id)
+    const created = await rollback.mutateAsync({ id: props.deployment.id, overrideLock })
+    lockedBy.value = null
     toast.success('Rollback started')
     void router.push({ name: 'deployment', params: { id: created.id } })
   } catch (e) {
+    if (onLockRefusal(e, 'rollback')) return
     toast.error(apiErrorMessage(e, 'Could not roll back'))
   }
+}
+
+function onRedeploy() {
+  void runRedeploy(false)
+}
+
+function onRollback() {
+  void runRollback(false)
+}
+
+function onOverride() {
+  if (refusedAction.value === 'rollback') void runRollback(true)
+  else void runRedeploy(true)
 }
 </script>
 
@@ -220,4 +258,13 @@ async function onRollback() {
       </AlertDialog>
     </div>
   </header>
+
+  <DeployLockedDialog
+    :open="lockedBy !== null"
+    :lock="lockedBy"
+    :pending="overridePending"
+    :action="overrideVerb"
+    @update:open="(v: boolean) => !v && (lockedBy = null)"
+    @override="onOverride"
+  />
 </template>

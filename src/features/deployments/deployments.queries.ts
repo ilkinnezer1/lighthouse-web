@@ -157,7 +157,8 @@ function invalidateFeeds(qc: ReturnType<typeof useQueryClient>, envId: string) {
 export function useRedeployDeployment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => redeployDeployment(id),
+    mutationFn: (vars: { id: string; overrideLock?: boolean }) =>
+      redeployDeployment(vars.id, vars.overrideLock ? { overrideLock: true } : undefined),
     onSuccess: (created) => invalidateFeeds(qc, created.environmentId),
   })
 }
@@ -165,7 +166,8 @@ export function useRedeployDeployment() {
 export function useRollbackDeployment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => rollbackDeployment(id),
+    mutationFn: (vars: { id: string; overrideLock?: boolean }) =>
+      rollbackDeployment(vars.id, vars.overrideLock ? { overrideLock: true } : undefined),
     onSuccess: (created) => invalidateFeeds(qc, created.environmentId),
   })
 }

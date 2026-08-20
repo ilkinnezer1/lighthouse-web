@@ -26,6 +26,7 @@ function env(over: Partial<EnvironmentListItem> = {}): EnvironmentListItem {
       organization: { slug: 'john-doe', atlassianSiteUrl: 'https://acme.atlassian.net' },
     },
     latestDeployment: null,
+    lock: null,
     ...over,
   }
 }

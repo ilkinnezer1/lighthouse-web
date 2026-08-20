@@ -11,6 +11,8 @@ import type {
   ServiceStats,
 } from '@/types/api'
 
+export type OverrideLockInput = { overrideLock?: boolean }
+
 export async function listDeployments(envId: string) {
   const { data } = await api.get<Deployment[]>(`/environments/${envId}/deployments`)
   return data
@@ -35,13 +37,13 @@ export async function cancelDeployment(id: string) {
   await api.post(`/deployments/${id}/cancel`)
 }
 
-export async function redeployDeployment(id: string) {
-  const { data } = await api.post<Deployment>(`/deployments/${id}/redeploy`)
+export async function redeployDeployment(id: string, input?: OverrideLockInput) {
+  const { data } = await api.post<Deployment>(`/deployments/${id}/redeploy`, input)
   return data
 }
 
-export async function rollbackDeployment(id: string) {
-  const { data } = await api.post<Deployment>(`/deployments/${id}/rollback`)
+export async function rollbackDeployment(id: string, input?: OverrideLockInput) {
+  const { data } = await api.post<Deployment>(`/deployments/${id}/rollback`, input)
   return data
 }
 
