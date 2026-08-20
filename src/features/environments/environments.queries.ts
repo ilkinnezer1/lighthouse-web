@@ -1,9 +1,11 @@
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { isTerminalStatus } from '@/features/deployments/deployments.status'
 import { useCursorFeed } from '@/lib/feed'
-import type { EnvironmentType } from '@/types/api'
-import { listAllEnvironments } from './environments.api'
+import { projectKeys } from '@/features/projects/projects.queries'
+import type { EnvironmentType, LockEnvironmentInput } from '@/types/api'
+import { listAllEnvironments, lockEnvironment, unlockEnvironment } from './environments.api'
 
 export const environmentBoardKeys = {
   all: ['environments'] as const,
@@ -40,5 +42,42 @@ export function useEnvironmentsFeed(filters: {
         ? 4000
         : false,
     refetchIntervalInBackground: true,
+  })
+}
+
+/**
+ * Lock state shows on the board and on the environment page, which are two
+ * different queries — so both are refetched after any change to it. A stale
+ * lock is worse than no lock: it tells someone the environment is free.
+ */
+export function useInvalidateLockState() {
+  const qc = useQueryClient()
+  return (projectId?: string) => {
+    void qc.invalidateQueries({ queryKey: environmentBoardKeys.all })
+    void qc.invalidateQueries({
+      queryKey: projectId ? projectKeys.detail(projectId) : projectKeys.all,
+    })
+  }
+}
+
+export function useLockEnvironment(
+  envId: MaybeRefOrGetter<string>,
+  projectId?: MaybeRefOrGetter<string | undefined>,
+) {
+  const invalidate = useInvalidateLockState()
+  return useMutation({
+    mutationFn: (input: LockEnvironmentInput = {}) => lockEnvironment(toValue(envId), input),
+    onSuccess: () => invalidate(toValue(projectId)),
+  })
+}
+
+export function useUnlockEnvironment(
+  envId: MaybeRefOrGetter<string>,
+  projectId?: MaybeRefOrGetter<string | undefined>,
+) {
+  const invalidate = useInvalidateLockState()
+  return useMutation({
+    mutationFn: () => unlockEnvironment(toValue(envId)),
+    onSuccess: () => invalidate(toValue(projectId)),
   })
 }

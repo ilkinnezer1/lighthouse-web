@@ -19,6 +19,7 @@ import { useVolumeBackups } from '@/features/volumes/backups.queries'
 import DomainSection from '@/features/domains/DomainSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
 import ScheduledTasksSection from '@/features/scheduled-tasks/ScheduledTasksSection.vue'
+import EnvironmentLockControl from '@/features/environments/EnvironmentLockControl.vue'
 import { useCan } from '@/features/orgs/useCan'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, ManagedDatabase } from '@/types/api'
@@ -128,6 +129,12 @@ const tabsWithCounts = computed(() =>
         >.
       </template>
       <template #actions>
+        <EnvironmentLockControl
+          v-if="env"
+          :env-id="envId"
+          :project-id="projectId"
+          :lock="env.lock"
+        />
         <Button v-if="canDeploy" size="sm" @click="showDeploy = true">
           <Rocket />
           Deploy

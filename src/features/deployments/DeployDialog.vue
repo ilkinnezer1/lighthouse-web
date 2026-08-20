@@ -3,12 +3,15 @@ import { computed, ref, watch } from 'vue'
 import { GitMerge, LoaderCircle, RefreshCw, Rocket } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import BranchPicker from './BranchPicker.vue'
+import DeployLockedDialog from './DeployLockedDialog.vue'
+import { lockConflict } from '@/features/environments/environments.lock'
+import { useInvalidateLockState } from '@/features/environments/environments.queries'
 import { useMergeCheck } from './deployments.queries'
 import { useCreateDeployment } from './deployments.queries'
 import { useProjectBranches } from '@/features/projects/projects.queries'
 import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { apiErrorMessage } from '@/lib/api'
-import type { Deployment, MergeCheckResult } from '@/types/api'
+import type { Deployment, EnvironmentLock, MergeCheckResult } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -74,6 +77,7 @@ watch(open, (isOpen) => {
     sourceBranch.value = props.defaultBranch ?? ''
     mergeBranches.value = []
     advanced.value = false
+    lockedBy.value = null
   }
 })
 
@@ -103,24 +107,45 @@ async function onFetch() {
   }
 }
 
-async function onDeploy() {
+const lockedBy = ref<EnvironmentLock | null>(null)
+const invalidateLockState = useInvalidateLockState()
+
+async function runDeploy(overrideLock: boolean) {
   const source = sourceBranch.value || props.defaultBranch || undefined
   const merges = mergeBranches.value
   try {
     const dep = await createDeployment.mutateAsync({
       sourceBranch: source,
       mergeBranches: merges.length ? merges : undefined,
+      ...(overrideLock ? { overrideLock: true } : {}),
     })
     toast.success(
       merges.length
         ? `Deploying ${source} + ${merges.length} merged branch${merges.length === 1 ? '' : 'es'}`
         : 'Deployment queued',
     )
+    lockedBy.value = null
     open.value = false
     emit('deployed', dep)
   } catch (e) {
+    const lock = lockConflict(e)
+    if (lock) {
+      // The 409 carries the lock as the server sees it — fresher than our cache,
+      // which is also why the board is refreshed off the back of it.
+      lockedBy.value = lock
+      invalidateLockState(props.projectId)
+      return
+    }
     toast.error(apiErrorMessage(e, 'Could not start deployment'))
   }
+}
+
+function onDeploy() {
+  void runDeploy(false)
+}
+
+function onDeployAnyway() {
+  void runDeploy(true)
 }
 </script>
 
@@ -249,4 +274,12 @@ async function onDeploy() {
       </DialogFooter>
     </DialogContent>
   </Dialog>
+
+  <DeployLockedDialog
+    :open="lockedBy !== null"
+    :lock="lockedBy"
+    :pending="isPending"
+    @update:open="(v: boolean) => !v && (lockedBy = null)"
+    @override="onDeployAnyway"
+  />
 </template>

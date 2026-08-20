@@ -202,6 +202,25 @@ export interface MaintenanceActionConfig {
   destructive?: boolean
 }
 
+export interface EnvironmentLockHolder {
+  id: string
+  username: string
+  displayName: string | null
+  email: string
+}
+
+export interface EnvironmentLock {
+  lockedBy: EnvironmentLockHolder
+  lockedAt: string
+  expiresAt: string
+  reason: string | null
+}
+
+export interface LockEnvironmentInput {
+  reason?: string
+  hours?: number
+}
+
 export interface Environment {
   id: string
   projectId: string
@@ -214,6 +233,7 @@ export interface Environment {
   active: boolean
   createdAt: string
   updatedAt: string
+  lock: EnvironmentLock | null
 }
 
 export interface Project {
@@ -421,6 +441,7 @@ export interface EnvironmentListItem {
       issueTitle: string | null
     }[]
   } | null
+  lock: EnvironmentLock | null
 }
 
 export interface EnvironmentListPage {
@@ -704,6 +725,7 @@ export type CreateDatabaseInput =
 export interface CreateDeploymentInput {
   sourceBranch?: string
   mergeBranches?: string[]
+  overrideLock?: boolean
 }
 
 export interface LogEntry {

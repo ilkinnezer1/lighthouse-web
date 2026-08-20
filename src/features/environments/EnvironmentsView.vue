@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ExternalLink, RotateCcw } from '@lucide/vue'
 import { useEnvironmentsFeed } from './environments.queries'
+import EnvironmentLockBadge from './EnvironmentLockBadge.vue'
 import {
   environmentBranch,
   environmentTicket,
@@ -11,6 +12,7 @@ import {
 } from './environments.board'
 import { statusTone, titleCase } from '@/features/deployments/deployments.status'
 import { useProjects } from '@/features/projects/projects.queries'
+import { useAuthStore } from '@/features/auth/auth.store'
 import { useSelectFilter } from '@/lib/feed'
 import { relativeTime } from '@/lib/time'
 import { shortSha } from '@/lib/utils'
@@ -35,6 +37,7 @@ import {
 } from '@/components/ui/select'
 
 const router = useRouter()
+const auth = useAuthStore()
 
 const [projectFilter, projectId] = useSelectFilter<string>()
 const [typeFilter, type] = useSelectFilter<EnvironmentType>()
@@ -177,6 +180,12 @@ function goToEnvironment(e: EnvironmentListItem) {
                 <span v-if="ticket(e)" class="mt-0.5 block truncate font-mono text-xs text-ink-4">
                   {{ branchName(e) }}
                 </span>
+              </span>
+
+              <!-- Who is on it, next to what is on it. Reserved like the
+                   columns below, so an unlocked row does not shift the rest. -->
+              <span class="hidden w-36 shrink-0 md:block">
+                <EnvironmentLockBadge :lock="e.lock" :current-user-id="auth.user?.id" />
               </span>
 
               <!-- Reserved even when empty: a column that appears only on some

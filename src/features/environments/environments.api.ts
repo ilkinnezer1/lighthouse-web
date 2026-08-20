@@ -1,5 +1,10 @@
 import { api } from '@/lib/api'
-import type { EnvironmentListPage, EnvironmentType } from '@/types/api'
+import type {
+  EnvironmentLock,
+  EnvironmentListPage,
+  EnvironmentType,
+  LockEnvironmentInput,
+} from '@/types/api'
 
 export async function listAllEnvironments(params: {
   cursor?: string
@@ -20,4 +25,16 @@ export async function listAllEnvironments(params: {
     },
   })
   return data
+}
+
+export async function lockEnvironment(
+  envId: string,
+  input: LockEnvironmentInput = {},
+): Promise<EnvironmentLock> {
+  const { data } = await api.post<EnvironmentLock>(`/environments/${envId}/lock`, input)
+  return data
+}
+
+export async function unlockEnvironment(envId: string): Promise<void> {
+  await api.delete(`/environments/${envId}/lock`)
 }

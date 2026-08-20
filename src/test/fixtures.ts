@@ -19,6 +19,7 @@ export const environment: Environment = {
   active: true,
   createdAt: '2026-08-11T10:00:00.000Z',
   updatedAt: '2026-08-11T10:00:00.000Z',
+  lock: null,
 }
 
 export const project: Project = {
