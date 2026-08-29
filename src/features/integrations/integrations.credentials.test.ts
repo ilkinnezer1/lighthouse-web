@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   HAS_REPO_SCOPE_NOTE,
   MISSING_REPO_SCOPE_NOTE,
+  canBrowseRepos,
   credentialSubtitle,
   credentialTitle,
   missingRepoScopeCount,
   normalizeToken,
+  repoBrowseBlockedNote,
   repoScopeDotClass,
   repoScopeNotice,
   repoScopeState,
@@ -42,6 +44,60 @@ const classicWithoutRepo = credential({
 const fineGrained = credential({
   scopes: [],
   hasRepoScope: null,
+})
+
+describe('canBrowseRepos', () => {
+  // The bug this replaces: browsing was gated on `providers.github.configured`,
+  // so an install with no OAuth App disabled the repo list even once a working
+  // token was saved — while the API happily returned private repositories.
+  it('allows browsing on a saved token alone, with no OAuth App in sight', () => {
+    expect(canBrowseRepos({ connected: false, credentials: [credential()] })).toBe(true)
+  })
+
+  it('allows browsing on an OAuth connection alone', () => {
+    expect(canBrowseRepos({ connected: true, credentials: [] })).toBe(true)
+  })
+
+  it('allows browsing when both are present', () => {
+    expect(canBrowseRepos({ connected: true, credentials: [credential()] })).toBe(true)
+  })
+
+  // The only blocked case, and exactly when the repos endpoint answers 428.
+  it('blocks browsing only when neither exists', () => {
+    expect(canBrowseRepos({ connected: false, credentials: [] })).toBe(false)
+    expect(canBrowseRepos({})).toBe(false)
+    expect(canBrowseRepos({ credentials: null })).toBe(false)
+  })
+
+  // A token short of `repo` still reads public repositories, and the server
+  // still authenticates with it — so it is not this predicate's business.
+  it('does not second-guess what a saved token can reach', () => {
+    const short = credential({ hasRepoScope: false, scopes: ['read:user'] })
+    expect(canBrowseRepos({ credentials: [short] })).toBe(true)
+  })
+})
+
+describe('repoBrowseBlockedNote', () => {
+  it('points at the token when there is no OAuth App to connect to', () => {
+    const note = repoBrowseBlockedNote(true)
+    expect(note).toContain('Save an access token')
+    expect(note).not.toContain('Connect GitHub above,')
+  })
+
+  it('offers both routes when connecting is actually possible', () => {
+    const note = repoBrowseBlockedNote(false)
+    expect(note).toContain('Connect GitHub above')
+    expect(note).toContain('access token')
+  })
+
+  // The old copy told people to give up on browsing and paste a URL instead.
+  // Saving a token now lights the browser up, so nothing may say otherwise.
+  it('never claims the server cannot offer browsing', () => {
+    for (const note of [repoBrowseBlockedNote(true), repoBrowseBlockedNote(false)]) {
+      expect(note).not.toContain('cannot offer')
+      expect(note).not.toContain('repository URL instead')
+    }
+  })
 })
 
 describe('repoScopeState', () => {

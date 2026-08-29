@@ -16,6 +16,26 @@ export const MISSING_REPO_SCOPE_NOTE =
 
 export const HAS_REPO_SCOPE_NOTE = 'Can read and clone your private repositories.'
 
+/**
+ * The repo browser rides any usable credential, not the OAuth App. The server
+ * resolves an OAuth token first and falls back to a saved PAT, and only answers
+ * 428 when neither exists — so gating this on `providers.github.configured`
+ * disabled browsing for exactly the people the token path was built for.
+ */
+export function canBrowseRepos(input: {
+  connected?: boolean
+  credentials?: readonly unknown[] | null
+}): boolean {
+  return !!input.connected || (input.credentials?.length ?? 0) > 0
+}
+
+/** What to do next when nothing can reach GitHub yet — the only blocked case. */
+export function repoBrowseBlockedNote(oauthUnconfigured: boolean): string {
+  return oauthUnconfigured
+    ? 'Save an access token above to browse your repositories — this server has no GitHub OAuth App to connect to.'
+    : 'Connect GitHub above, or save an access token, to browse your repositories.'
+}
+
 export type RepoScopeState = 'granted' | 'missing' | 'unknown'
 
 type ScopeSource = Pick<GitCredentialView, 'hasRepoScope'>

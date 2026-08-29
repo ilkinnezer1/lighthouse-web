@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { refDebounced } from '@vueuse/core'
 import { ExternalLink, Lock, RotateCcw, Search } from '@lucide/vue'
 import { useRepoBrowser } from './integrations.queries'
+import { repoBrowseBlockedNote } from './integrations.credentials'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { RepoSummary } from '@/types/api'
@@ -11,22 +12,18 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const props = defineProps<{ connected: boolean; oauthUnconfigured?: boolean }>()
+// `canBrowse` is "some credential can reach GitHub", not "OAuth is connected" —
+// the server falls back to a saved token, so the two are no longer the same.
+const props = defineProps<{ canBrowse: boolean; oauthUnconfigured?: boolean }>()
 const emit = defineEmits<{ deploy: [repo: RepoSummary] }>()
 
 const searchInput = ref('')
 const search = refDebounced(searchInput, 300)
 
-const browser = useRepoBrowser({ search, enabled: () => props.connected })
+const browser = useRepoBrowser({ search, enabled: () => props.canBrowse })
 const items = browser.items
 
-// Browsing rides the OAuth connection. Without an OAuth App there is nothing to
-// connect to, so pointing at the connect button above would be a dead end.
-const emptyNote = computed(() =>
-  props.oauthUnconfigured
-    ? 'Browsing needs a GitHub connection, which this server cannot offer without an OAuth App. Create a project from a repository URL instead — a saved token covers the private ones.'
-    : 'Connect GitHub above to browse your repositories.',
-)
+const blockedNote = computed(() => repoBrowseBlockedNote(!!props.oauthUnconfigured))
 </script>
 
 <template>
@@ -44,19 +41,19 @@ const emptyNote = computed(() =>
         />
         <Input
           v-model="searchInput"
-          :disabled="!props.connected"
+          :disabled="!props.canBrowse"
           placeholder="Search repositories"
           class="h-9 pl-8 text-sm"
         />
       </div>
     </div>
 
-    <!-- not connected -->
+    <!-- nothing that can reach GitHub -->
     <div
-      v-if="!props.connected || browser.notConnected.value"
+      v-if="!props.canBrowse || browser.notConnected.value"
       class="mt-4 rounded-xl border border-dashed border-border px-6 py-16 text-center text-sm text-muted-foreground"
     >
-      <span class="mx-auto block max-w-prose">{{ emptyNote }}</span>
+      <span class="mx-auto block max-w-prose">{{ blockedNote }}</span>
     </div>
 
     <!-- loading (first page) -->

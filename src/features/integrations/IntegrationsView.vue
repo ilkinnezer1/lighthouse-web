@@ -10,7 +10,7 @@ import GitCredentialsSection from './GitCredentialsSection.vue'
 import IntegrationsGuide from './IntegrationsGuide.vue'
 import RepoBrowser from './RepoBrowser.vue'
 import { integrationKeys, useIntegrations } from './integrations.queries'
-import { showsOauthNotice } from './integrations.credentials'
+import { canBrowseRepos, showsOauthNotice } from './integrations.credentials'
 import CreateProjectDialog from '@/features/projects/CreateProjectDialog.vue'
 import { PageHead, PageShell, SectionHead } from '@/components/ui/section'
 import type { Project, ProjectPrefill, RepoSummary } from '@/types/api'
@@ -27,7 +27,14 @@ const connection = computed(
 const atlassianConnection = computed(
   () => data.value?.connections.find((c) => c.provider === 'atlassian') ?? null,
 )
-const isConnected = computed(() => !!connection.value)
+// Browsing needs a credential the server can use, and a saved token is one —
+// the repos endpoint only 428s when there is neither a connection nor a token.
+const canBrowse = computed(() =>
+  canBrowseRepos({
+    connected: !!connection.value,
+    credentials: data.value?.gitCredentials,
+  }),
+)
 
 const githubConfigured = computed(() => data.value?.providers?.github.configured)
 const atlassianConfigured = computed(() => data.value?.providers?.atlassian.configured)
@@ -125,7 +132,7 @@ onMounted(() => {
 
     <section class="mt-12">
       <RepoBrowser
-        :connected="isConnected"
+        :can-browse="canBrowse"
         :oauth-unconfigured="githubUnconfigured"
         @deploy="onDeploy"
       />

@@ -6,9 +6,15 @@ import { mountApp, settle } from '@/test/mount'
 import { apiErrorMessage } from '@/lib/api'
 import ConnectionCard from './ConnectionCard.vue'
 import GitCredentialsSection from './GitCredentialsSection.vue'
+import RepoBrowser from './RepoBrowser.vue'
 import { useCreateGitCredential } from './integrations.queries'
 import { toCreateInput } from './integrations.credentials'
-import type { GitCredentialView, GithubConnection, IntegrationsOverview } from '@/types/api'
+import type {
+  GitCredentialView,
+  GithubConnection,
+  IntegrationsOverview,
+  RepoSummary,
+} from '@/types/api'
 
 vi.mock('vue-sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -254,5 +260,68 @@ describe('removing a token', () => {
     await settle()
 
     expect(api.callsTo('delete', '/integrations/git-credentials/gc-1')).toHaveLength(1)
+  })
+})
+
+const REPO: RepoSummary = {
+  fullName: 'test-veng/care-app',
+  name: 'care-app',
+  owner: 'test-veng',
+  private: true,
+  defaultBranch: 'main',
+  description: null,
+  language: 'PHP',
+  pushedAt: '2026-08-28T10:00:00.000Z',
+  htmlUrl: 'https://github.com/test-veng/care-app',
+}
+
+async function mountBrowser(props: Record<string, unknown>) {
+  const { wrapper } = await mountApp(RepoBrowser, { props })
+  mounted.push(wrapper)
+  await settle()
+  return wrapper
+}
+
+describe('browsing repositories', () => {
+  beforeEach(() => {
+    api.get(/\/integrations\/github\/repos/, { data: { items: [REPO], nextPage: null } })
+  })
+
+  // The regression: the browser was gated on the OAuth App, so an install with
+  // none disabled the list even after a working token was saved — while the API
+  // was returning private repositories for that very token.
+  it('lists repositories on a saved token alone', async () => {
+    const wrapper = await mountBrowser({ canBrowse: true, oauthUnconfigured: true })
+
+    expect(api.callsTo('get', /\/integrations\/github\/repos/)).toHaveLength(1)
+    expect(wrapper.text()).toContain('care-app')
+    expect(wrapper.text()).toContain('Private')
+    expect(wrapper.find('input').attributes('disabled')).toBeUndefined()
+  })
+
+  it('scopes the search to what was typed', async () => {
+    const wrapper = await mountBrowser({ canBrowse: true })
+    await wrapper.find('input').setValue('care')
+    await new Promise((r) => setTimeout(r, 400))
+    await settle()
+
+    const searched = api
+      .callsTo('get', /\/integrations\/github\/repos/)
+      .filter((c) => c.params?.search === 'care')
+    expect(searched.length).toBeGreaterThan(0)
+  })
+
+  it('asks for nothing when no credential can reach GitHub', async () => {
+    const wrapper = await mountBrowser({ canBrowse: false, oauthUnconfigured: true })
+
+    expect(api.callsTo('get', /\/integrations\/github\/repos/)).toHaveLength(0)
+    expect(wrapper.text()).toContain('Save an access token above')
+    expect(wrapper.text()).not.toContain('cannot offer')
+    expect(wrapper.find('input').attributes('disabled')).toBeDefined()
+  })
+
+  it('offers both routes when an OAuth App does exist', async () => {
+    const wrapper = await mountBrowser({ canBrowse: false, oauthUnconfigured: false })
+    expect(wrapper.text()).toContain('Connect GitHub above')
   })
 })
