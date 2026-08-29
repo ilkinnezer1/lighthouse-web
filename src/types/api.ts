@@ -507,6 +507,9 @@ export interface EnvironmentListItem {
   lock: EnvironmentLock | null
   // Aggregated by the board's own query — a per-row fetch would be 30 requests.
   openFindingCount: number
+  // Measured against this environment's latest succeeded build, so it moves the
+  // moment it redeploys. Null when nobody has put a checklist on it.
+  checklist: { total: number; remaining: number } | null
 }
 
 export interface EnvironmentListPage {
@@ -562,8 +565,12 @@ export type FindingStatus = 'OPEN' | 'FIXED' | 'CANNOT_REPRODUCE'
  */
 export type LogSnapshotStatus = 'CAPTURED' | 'UNAVAILABLE'
 
-/** The build a finding is pinned to, on both ends of its life. */
-export interface FindingBuild {
+/**
+ * A build, as anything pinned to one points at it: a finding's `foundOn`, a
+ * checklist tick's `build`. One shape, because a second near-identical "a
+ * build" type is how two features start disagreeing about what a build is.
+ */
+export interface DeploymentRef {
   id: string
   status: DeploymentStatus
   commitSha: string | null
@@ -583,8 +590,8 @@ export interface Finding {
   resolvedAt: string | null
   // Always present, in every response: without it a finding cannot say which
   // code was running, which is the only reason it is worth filing.
-  foundOn: FindingBuild
-  fixedIn: FindingBuild | null
+  foundOn: DeploymentRef
+  fixedIn: DeploymentRef | null
   logSnapshotStatus: LogSnapshotStatus
 }
 
@@ -602,6 +609,74 @@ export interface CreateFindingInput {
 
 export interface UpdateFindingInput {
   status: FindingStatus
+}
+
+// ── checklist ───────────────────────────────────────────────────────────────
+// The chores QA works through on a build. The ITEM belongs to the environment —
+// "test PROJ-12" is not an assertion about code and outlives any one deploy —
+// while the CHECK belongs to the deployment, because "PROJ-12 works" is
+// worthless without saying which build it worked on.
+
+export type ChecklistItemSource = 'SEEDED' | 'MANUAL'
+export type CheckResult = 'PASS' | 'FAIL'
+
+export interface ChecklistCheck {
+  id: string
+  result: CheckResult
+  note: string | null
+  findingId: string | null
+  checkedBy: UserRef | null
+  createdAt: string
+  build: DeploymentRef
+}
+
+export interface ChecklistItem {
+  id: string
+  title: string
+  source: ChecklistItemSource
+  issueKey: string | null
+  issueUrl: string | null
+  createdBy: UserRef | null
+  createdAt: string
+  /** The check on the build being viewed. */
+  check: ChecklistCheck | null
+  /** Newest check on an earlier build. Always null when `check` is set. */
+  lastCheck: ChecklistCheck | null
+}
+
+/**
+ * `remaining` is "no check on THIS build" — never checked, or checked on a
+ * build that is gone. A FAIL is tested and broken, which is a developer's
+ * problem, not outstanding testing, so it is counted separately.
+ */
+export interface ChecklistSummary {
+  total: number
+  passed: number
+  failed: number
+  remaining: number
+}
+
+export interface Checklist {
+  deployment: DeploymentRef
+  items: ChecklistItem[]
+  summary: ChecklistSummary
+  /** Rows a seed would add right now. Zero means the button has nothing to do. */
+  seedable: number
+}
+
+export interface CreateChecklistItemInput {
+  title: string
+}
+
+export interface CheckItemInput {
+  result: CheckResult
+  note?: string
+  /**
+   * Filed by the check route itself, so one call records the fail and the bug.
+   * Optional even on a FAIL — demanding a write-up is how a checklist stops
+   * being used.
+   */
+  finding?: { title: string; body?: string }
 }
 
 export interface ManagedDatabase {

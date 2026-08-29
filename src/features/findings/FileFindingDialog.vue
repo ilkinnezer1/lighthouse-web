@@ -8,7 +8,7 @@ import { createFindingSchema } from './findings.schemas'
 import { useCreateFinding } from './findings.queries'
 import { apiErrorMessage } from '@/lib/api'
 import { shortSha } from '@/lib/utils'
-import type { Deployment, Finding } from '@/types/api'
+import type { CreateFindingInput, Deployment, Finding } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -22,7 +22,19 @@ import {
 } from '@/components/ui/dialog'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 
-const props = defineProps<{ deployment: Deployment }>()
+const props = defineProps<{
+  deployment: Deployment
+  prefillTitle?: string
+  heading?: string
+  deck?: string
+  actionLabel?: string
+  /**
+   * Hands the finding to the caller instead of posting it here. The checklist
+   * sends it through its own check route so one call records both the fail and
+   * the bug — the caller owns the success message it produces.
+   */
+  submit?: (input: CreateFindingInput) => Promise<unknown>
+}>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ created: [finding: Finding] }>()
 
@@ -32,7 +44,7 @@ const { handleSubmit, isSubmitting, resetForm } = useForm({
 })
 
 watch(open, (isOpen) => {
-  if (isOpen) resetForm()
+  if (isOpen) resetForm({ values: { title: props.prefillTitle ?? '', body: '' } })
 })
 
 const sha = computed(() => shortSha(props.deployment.commitSha))
@@ -42,14 +54,19 @@ const mergeCount = computed(
 )
 
 const onSubmit = handleSubmit(async (values) => {
+  const input: CreateFindingInput = {
+    title: values.title.trim(),
+    body: values.body?.trim() || undefined,
+  }
   try {
-    const finding = await create.mutateAsync({
-      title: values.title.trim(),
-      body: values.body?.trim() || undefined,
-    })
-    toast.success(sha.value ? `Finding filed against ${sha.value}` : 'Finding filed')
+    if (props.submit) {
+      await props.submit(input)
+    } else {
+      const finding = await create.mutateAsync(input)
+      toast.success(sha.value ? `Finding filed against ${sha.value}` : 'Finding filed')
+      emit('created', finding)
+    }
     open.value = false
-    emit('created', finding)
   } catch (error) {
     toast.error(apiErrorMessage(error, 'Could not file the finding'))
   }
@@ -60,10 +77,12 @@ const onSubmit = handleSubmit(async (values) => {
   <Dialog v-model:open="open">
     <DialogContent class="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Report a finding</DialogTitle>
+        <DialogTitle>{{ heading ?? 'Report a finding' }}</DialogTitle>
         <DialogDescription>
-          Pinned to this build, not to the environment — so it still says which code was running
-          after this environment moves on.
+          {{
+            deck ??
+            'Pinned to this build, not to the environment — so it still says which code was running after this environment moves on.'
+          }}
         </DialogDescription>
       </DialogHeader>
 
@@ -129,10 +148,13 @@ const onSubmit = handleSubmit(async (values) => {
       </form>
 
       <DialogFooter>
+        <!-- Where a caller offers a way out that still records something —
+             the checklist's "fail it without writing the bug up". -->
+        <slot name="secondary" />
         <Button variant="ghost" type="button" @click="open = false">Cancel</Button>
         <Button type="submit" form="file-finding" :disabled="isSubmitting">
           <LoaderCircle v-if="isSubmitting" class="animate-spin" />
-          File finding
+          {{ actionLabel ?? 'File finding' }}
         </Button>
       </DialogFooter>
     </DialogContent>

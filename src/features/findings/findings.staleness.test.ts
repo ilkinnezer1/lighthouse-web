@@ -10,12 +10,12 @@ import {
   stalenessNote,
   type BuildRef,
 } from './findings.staleness'
-import type { Finding, FindingBuild } from '@/types/api'
+import type { DeploymentRef, Finding } from '@/types/api'
 
 const FOUND_SHA = 'abc1234000000'
 const NOW_SHA = 'def5678000000'
 
-function build(over: Partial<FindingBuild> = {}): FindingBuild {
+function build(over: Partial<DeploymentRef> = {}): DeploymentRef {
   return {
     id: 'dep-1',
     status: 'SUCCEEDED',
