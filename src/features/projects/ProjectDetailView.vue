@@ -19,6 +19,8 @@ import { useProjectStatuses } from './project-status'
 import ProjectSettingsDialog from './ProjectSettingsDialog.vue'
 import TransferProjectDialog from './TransferProjectDialog.vue'
 import DeployDialog from '@/features/deployments/DeployDialog.vue'
+import EnvironmentSleepBadge from '@/features/environments/EnvironmentSleepBadge.vue'
+import { SLEEPING_URL_NOTE, isSleeping } from '@/features/environments/environments.hibernation'
 import { statusTone, titleCase } from '@/features/deployments/deployments.status'
 import { useActiveOrgStore } from '@/features/orgs/active-org.store'
 import { useCan } from '@/features/orgs/useCan'
@@ -224,6 +226,10 @@ async function onTransferred(organizationId: string) {
               <span v-else class="text-ink-4">Never deployed</span>
             </span>
 
+            <span class="hidden shrink-0 basis-24 lg:block">
+              <EnvironmentSleepBadge :hibernation="env.hibernation" />
+            </span>
+
             <span class="hidden shrink-0 basis-24 text-right text-xs text-ink-4 sm:block">
               <template v-if="byEnvironment.get(env.id)">
                 {{ relativeTime(byEnvironment.get(env.id)!.createdAt) }}
@@ -231,13 +237,20 @@ async function onTransferred(organizationId: string) {
               <template v-else>—</template>
             </span>
 
+            <!-- Dimmed and relabelled while asleep: the address 404s until the
+                 environment is woken, and this row is the way to that page. -->
             <a
               v-if="byEnvironment.get(env.id)?.url"
               :href="byEnvironment.get(env.id)!.url"
               target="_blank"
               rel="noopener noreferrer"
-              class="shrink-0 rounded-md p-1.5 text-ink-4 transition hover:bg-accent hover:text-ink-1"
-              :title="`Open ${byEnvironment.get(env.id)!.url}`"
+              class="shrink-0 rounded-md p-1.5 transition hover:bg-accent hover:text-ink-1"
+              :class="isSleeping(env.hibernation) ? 'text-ink-4/50' : 'text-ink-4'"
+              :title="
+                isSleeping(env.hibernation)
+                  ? `${SLEEPING_URL_NOTE} — open this environment to wake it`
+                  : `Open ${byEnvironment.get(env.id)!.url}`
+              "
               @click.stop
             >
               <ExternalLink class="size-4" />

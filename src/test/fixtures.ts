@@ -3,9 +3,20 @@ import type {
   DeploymentBranch,
   DeploymentStage,
   Environment,
+  EnvironmentHibernation,
   Project,
   Service,
 } from '@/types/api'
+
+// Always present on an environment read, never null — an awake, opted-out
+// environment is what every fixture that does not care about it wants.
+export const awake: EnvironmentHibernation = {
+  enabled: false,
+  idleTimeoutMinutes: 240,
+  sleeping: false,
+  hibernatedAt: null,
+  lastActivityAt: null,
+}
 
 export const environment: Environment = {
   id: 'env-1',
@@ -20,6 +31,7 @@ export const environment: Environment = {
   createdAt: '2026-08-11T10:00:00.000Z',
   updatedAt: '2026-08-11T10:00:00.000Z',
   lock: null,
+  hibernation: awake,
 }
 
 export const project: Project = {

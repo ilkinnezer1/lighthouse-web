@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ExternalLink, RotateCcw } from '@lucide/vue'
-import { useEnvironmentsFeed } from './environments.queries'
+import { ExternalLink, LoaderCircle, RotateCcw, Sun } from '@lucide/vue'
+import { toast } from 'vue-sonner'
+import { useEnvironmentsFeed, useWakeEnvironment } from './environments.queries'
 import EnvironmentLockBadge from './EnvironmentLockBadge.vue'
+import EnvironmentSleepBadge from './EnvironmentSleepBadge.vue'
+import {
+  SLEEPING_URL_NOTE,
+  hibernationErrorMessage,
+  isSleeping,
+} from './environments.hibernation'
 import FindingsFlag from '@/features/findings/FindingsFlag.vue'
 import ChecklistProgress from '@/features/checklist/ChecklistProgress.vue'
 import {
@@ -15,6 +22,7 @@ import {
 import { statusTone, titleCase } from '@/features/deployments/deployments.status'
 import { useProjects } from '@/features/projects/projects.queries'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { useCan } from '@/features/orgs/useCan'
 import { useSelectFilter } from '@/lib/feed'
 import { relativeTime } from '@/lib/time'
 import { shortSha } from '@/lib/utils'
@@ -71,6 +79,27 @@ const branchName = environmentBranch
 
 function goToEnvironment(e: EnvironmentListItem) {
   void router.push(`/projects/${e.project.id}/env/${e.id}`)
+}
+
+const canManage = useCan('env.manage')
+const wake = useWakeEnvironment()
+
+// One mutation for the whole board; `variables` is what says which row is busy.
+function waking(e: EnvironmentListItem): boolean {
+  return wake.isPending.value && wake.variables.value?.envId === e.id
+}
+
+const sleeping = isSleeping
+
+async function onWake(e: EnvironmentListItem) {
+  try {
+    await wake.mutateAsync({ envId: e.id, projectId: e.project.id })
+    toast.success(`${e.project.name}/${e.name} is waking up`, {
+      description: 'The URL answers again once the containers finish booting.',
+    })
+  } catch (err) {
+    toast.error(hibernationErrorMessage(err, 'Could not wake the environment'))
+  }
 }
 </script>
 
@@ -201,6 +230,11 @@ function goToEnvironment(e: EnvironmentListItem) {
                 <ChecklistProgress :progress="e.checklist" />
               </span>
 
+              <!-- Fifth, and the one that changes what the row's link does. -->
+              <span class="hidden w-12 shrink-0 lg:block">
+                <EnvironmentSleepBadge :hibernation="e.hibernation" compact />
+              </span>
+
               <!-- Reserved even when empty: a column that appears only on some
                    rows leaves every following column ragged. -->
               <span class="hidden w-16 shrink-0 text-right font-mono text-xs text-ink-4 lg:block">
@@ -229,12 +263,33 @@ function goToEnvironment(e: EnvironmentListItem) {
                   {{ sourceBranch(e)?.issueKey }}
                 </a>
               </span>
+              <!-- One slot, two states, so no row's width moves. A link to a
+                   URL that 404s is worse than no link: the row offers the thing
+                   that makes it answer instead. -->
+              <Button
+                v-if="sleeping(e.hibernation) && canManage"
+                size="icon-sm"
+                variant="ghost"
+                :disabled="wake.isPending.value"
+                :title="`${SLEEPING_URL_NOTE} — ${e.url}`"
+                @click="onWake(e)"
+              >
+                <LoaderCircle v-if="waking(e)" class="animate-spin" />
+                <Sun v-else />
+                <span class="sr-only">Wake {{ e.name }}</span>
+              </Button>
               <a
+                v-else
                 :href="e.url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="rounded p-1 text-ink-4 transition-colors hover:text-primary"
-                :title="`Open ${e.url}`"
+                class="rounded p-1 transition-colors"
+                :class="
+                  sleeping(e.hibernation)
+                    ? 'text-ink-4/50 hover:text-ink-3'
+                    : 'text-ink-4 hover:text-primary'
+                "
+                :title="sleeping(e.hibernation) ? `${SLEEPING_URL_NOTE} — ${e.url}` : `Open ${e.url}`"
               >
                 <ExternalLink class="size-4" />
               </a>

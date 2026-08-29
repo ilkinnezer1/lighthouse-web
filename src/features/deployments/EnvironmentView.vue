@@ -20,6 +20,7 @@ import DomainSection from '@/features/domains/DomainSection.vue'
 import FileExplorerSection from '@/features/env-files/FileExplorerSection.vue'
 import ScheduledTasksSection from '@/features/scheduled-tasks/ScheduledTasksSection.vue'
 import EnvironmentLockControl from '@/features/environments/EnvironmentLockControl.vue'
+import EnvironmentHibernationControl from '@/features/environments/EnvironmentHibernationControl.vue'
 import EnvironmentFindings from '@/features/findings/EnvironmentFindings.vue'
 import { useEnvironmentFindings } from '@/features/findings/findings.queries'
 import { openCount } from '@/features/findings/findings.format'
@@ -144,6 +145,12 @@ const tabsWithCounts = computed(() =>
         >.
       </template>
       <template #actions>
+        <EnvironmentHibernationControl
+          v-if="env"
+          :env-id="envId"
+          :project-id="projectId"
+          :hibernation="env.hibernation"
+        />
         <EnvironmentLockControl
           v-if="env"
           :env-id="envId"
