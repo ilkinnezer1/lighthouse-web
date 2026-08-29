@@ -1,5 +1,5 @@
 import { shortSha } from '@/lib/utils'
-import type { DeploymentStatus, Finding, FindingBuild } from '@/types/api'
+import type { DeploymentRef, DeploymentStatus, Finding } from '@/types/api'
 
 // A finding is pinned to the build it was seen on, so the moment it is shown
 // anywhere else it has to say so. Everything here answers one question — which
@@ -37,7 +37,7 @@ export type FindingFreshness =
  * The SHAs are only what the sentence says out loud.
  */
 export function findingFreshness(
-  foundOn: FindingBuild,
+  foundOn: DeploymentRef,
   current: BuildRef | null | undefined,
 ): FindingFreshness {
   const foundSha = foundOn.commitSha

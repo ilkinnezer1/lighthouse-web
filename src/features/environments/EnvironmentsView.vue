@@ -5,6 +5,7 @@ import { ExternalLink, RotateCcw } from '@lucide/vue'
 import { useEnvironmentsFeed } from './environments.queries'
 import EnvironmentLockBadge from './EnvironmentLockBadge.vue'
 import FindingsFlag from '@/features/findings/FindingsFlag.vue'
+import ChecklistProgress from '@/features/checklist/ChecklistProgress.vue'
 import {
   environmentBranch,
   environmentTicket,
@@ -193,6 +194,11 @@ function goToEnvironment(e: EnvironmentListItem) {
                    it: whether anything is wrong with it. -->
               <span class="hidden w-20 shrink-0 md:block">
                 <FindingsFlag :count="e.openFindingCount" />
+              </span>
+
+              <!-- And its fourth: whether anyone has tested what is on it. -->
+              <span class="hidden w-20 shrink-0 lg:block">
+                <ChecklistProgress :progress="e.checklist" />
               </span>
 
               <!-- Reserved even when empty: a column that appears only on some
