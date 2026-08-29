@@ -911,6 +911,48 @@ export interface AtlassianConnection {
 
 export type Connection = GithubConnection | AtlassianConnection
 
+// Whether the server holds OAuth client credentials for a provider. Without
+// them its connect route can only answer 503, so the UI must not offer it.
+export interface ProviderStatus {
+  configured: boolean
+}
+
+export interface IntegrationProviders {
+  github: ProviderStatus
+  atlassian: ProviderStatus
+}
+
+/**
+ * A stored GitHub personal access token. The token itself is never returned by
+ * the API and must never be rendered — `fingerprint` is a display-only hash
+ * prefix that exists purely to tell two saved tokens apart.
+ *
+ * `hasRepoScope` is TRI-STATE. GitHub reports a classic token's grants in an
+ * `x-oauth-scopes` header and sends no such header for a fine-grained one, so
+ * `null` means "the token did not say", not "no".
+ */
+export interface GitCredentialView {
+  id: string
+  label: string | null
+  login: string | null
+  fingerprint: string | null
+  scopes: string[]
+  hasRepoScope: boolean | null
+  createdAt: string
+}
+
+export interface CreateGitCredentialInput {
+  token: string
+  label?: string
+}
+
+// GET /integrations — the whole page in one payload.
+export interface IntegrationsOverview {
+  connections: Connection[]
+  providers: IntegrationProviders
+  gitCredentials: GitCredentialView[]
+}
+
 // GET /orgs/:id/jira — the org's chosen site, plus what the caller can pick from.
 export interface OrgJiraSettings {
   site: { cloudId: string; url: string | null } | null
