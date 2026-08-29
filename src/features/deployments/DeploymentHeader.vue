@@ -7,7 +7,9 @@ import {
   BellOff,
   ExternalLink,
   LoaderCircle,
+  Moon,
   RefreshCw,
+  Sun,
   TriangleAlert,
   Undo2,
 } from '@lucide/vue'
@@ -21,7 +23,16 @@ import { useDeployWatch } from './useDeployWatch'
 import DeploymentStatusBadge from './DeploymentStatusBadge.vue'
 import DeployLockedDialog from './DeployLockedDialog.vue'
 import { lockConflict } from '@/features/environments/environments.lock'
-import { useInvalidateLockState } from '@/features/environments/environments.queries'
+import {
+  SLEEPING_URL_NOTE,
+  hibernationErrorMessage,
+  isSleeping,
+} from '@/features/environments/environments.hibernation'
+import {
+  useInvalidateLockState,
+  useWakeEnvironment,
+} from '@/features/environments/environments.queries'
+import { useCan } from '@/features/orgs/useCan'
 import type { Deployment, EnvironmentLock } from '@/types/api'
 import { useProject } from '@/features/projects/projects.queries'
 import { durationLabel, relativeTime } from '@/lib/time'
@@ -61,6 +72,35 @@ const liveUrl = computed(() => {
   const d = props.deployment
   return d.status === 'RUNNING' || d.status === 'SUCCEEDED' ? d.url : null
 })
+
+// The deployment payload does not carry hibernation, but the project it already
+// fetched for the breadcrumb does — and without it a sleeping environment shows
+// the destructive "Not running" pill, which reads as a build that broke rather
+// than an environment someone deliberately put to sleep.
+const environment = computed(
+  () =>
+    projectQuery.data.value?.environments?.find((e) => e.id === props.deployment.environmentId) ??
+    null,
+)
+const sleeping = computed(() => isSleeping(environment.value?.hibernation))
+
+const canManageEnv = useCan('env.manage')
+const wake = useWakeEnvironment()
+
+async function onWake() {
+  try {
+    const { services } = await wake.mutateAsync({
+      envId: props.deployment.environmentId,
+      projectId: projectId.value || undefined,
+    })
+    toast.success(`Woken — ${services.length} service${services.length === 1 ? '' : 's'} started`, {
+      description: 'The URL answers again once the containers finish booting.',
+    })
+    emit('refetch')
+  } catch (e) {
+    toast.error(hibernationErrorMessage(e, 'Could not wake the environment'))
+  }
+}
 
 // How long the build took — the first thing you look for on a finished deploy.
 const buildDuration = computed(() =>
@@ -180,12 +220,39 @@ function onOverride() {
       </p>
     </div>
     <div class="flex shrink-0 items-center gap-2">
-      <a v-if="liveUrl && !webOffline" :href="liveUrl" target="_blank" rel="noopener noreferrer">
+      <a
+        v-if="liveUrl && !sleeping && !webOffline"
+        :href="liveUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <Button variant="outline" size="sm">
           <ExternalLink />
           Open
         </Button>
       </a>
+      <!-- Asleep outranks "not running": the containers being down is the
+           point, and the URL 404s rather than erroring. -->
+      <template v-else-if="liveUrl && sleeping">
+        <span
+          class="inline-flex items-center gap-1.5 rounded-md border border-rule bg-sunken px-2.5 py-1.5 text-xs font-medium text-ink-2"
+          :title="`${SLEEPING_URL_NOTE} — ${liveUrl}`"
+        >
+          <Moon class="size-3.5" />
+          {{ SLEEPING_URL_NOTE }}
+        </span>
+        <Button
+          v-if="canManageEnv"
+          variant="outline"
+          size="sm"
+          :disabled="wake.isPending.value"
+          @click="onWake"
+        >
+          <LoaderCircle v-if="wake.isPending.value" class="animate-spin" />
+          <Sun v-else />
+          Wake
+        </Button>
+      </template>
       <span
         v-else-if="liveUrl && webOffline"
         class="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive"

@@ -5,6 +5,7 @@ import {
   environmentTicketHref,
   sourceBranch,
 } from './environments.board'
+import { awake } from '@/test/fixtures'
 import type { EnvironmentListItem } from '@/types/api'
 
 function env(over: Partial<EnvironmentListItem> = {}): EnvironmentListItem {
@@ -27,6 +28,7 @@ function env(over: Partial<EnvironmentListItem> = {}): EnvironmentListItem {
     },
     latestDeployment: null,
     lock: null,
+    hibernation: awake,
     openFindingCount: 0,
     checklist: null,
     ...over,

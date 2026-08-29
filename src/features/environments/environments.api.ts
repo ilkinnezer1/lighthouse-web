@@ -1,9 +1,12 @@
 import { api } from '@/lib/api'
 import type {
+  EnvironmentHibernation,
   EnvironmentLock,
   EnvironmentListPage,
   EnvironmentType,
+  HibernationActionResult,
   LockEnvironmentInput,
+  UpdateHibernationInput,
 } from '@/types/api'
 
 export async function listAllEnvironments(params: {
@@ -37,4 +40,25 @@ export async function lockEnvironment(
 
 export async function unlockEnvironment(envId: string): Promise<void> {
   await api.delete(`/environments/${envId}/lock`)
+}
+
+export async function updateHibernation(
+  envId: string,
+  input: UpdateHibernationInput,
+): Promise<EnvironmentHibernation> {
+  const { data } = await api.put<EnvironmentHibernation>(
+    `/environments/${envId}/hibernation`,
+    input,
+  )
+  return data
+}
+
+export async function wakeEnvironment(envId: string): Promise<HibernationActionResult> {
+  const { data } = await api.post<HibernationActionResult>(`/environments/${envId}/wake`)
+  return data
+}
+
+export async function hibernateEnvironment(envId: string): Promise<HibernationActionResult> {
+  const { data } = await api.post<HibernationActionResult>(`/environments/${envId}/hibernate`)
+  return data
 }

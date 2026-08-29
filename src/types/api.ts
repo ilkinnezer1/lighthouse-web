@@ -284,6 +284,36 @@ export interface LockEnvironmentInput {
   hours?: number
 }
 
+/**
+ * Unlike `lock`, this is always present and never null: the toggle and the
+ * timeout have to render whether or not the environment is asleep. `sleeping`
+ * is the state, and while it holds the environment's URL returns 404 — Traefik
+ * drops the route with the containers rather than serving an error.
+ */
+export interface EnvironmentHibernation {
+  enabled: boolean
+  idleTimeoutMinutes: number
+  sleeping: boolean
+  hibernatedAt: string | null
+  lastActivityAt: string | null
+}
+
+export interface UpdateHibernationInput {
+  enabled: boolean
+  idleTimeoutMinutes?: number
+}
+
+export interface HibernationServiceState {
+  name: string
+  state: string
+}
+
+// POST /environments/:id/wake and .../hibernate
+export interface HibernationActionResult {
+  hibernation: EnvironmentHibernation
+  services: HibernationServiceState[]
+}
+
 export interface Environment {
   id: string
   projectId: string
@@ -297,6 +327,7 @@ export interface Environment {
   createdAt: string
   updatedAt: string
   lock: EnvironmentLock | null
+  hibernation: EnvironmentHibernation
 }
 
 export interface Project {
@@ -436,7 +467,9 @@ export interface Deployment {
   services?: Service[]
   // The detail payload nests the project and its org, which is where the Jira
   // site lives — so a stored branch can be linked without a second lookup.
-  environment?: Environment & {
+  // Narrower than a read of the environment itself: this payload selects a few
+  // columns, so `hibernation` is not on it. Ask the project for that.
+  environment?: Omit<Environment, 'hibernation'> & {
     project?: {
       id: string
       name: string
@@ -505,6 +538,7 @@ export interface EnvironmentListItem {
     }[]
   } | null
   lock: EnvironmentLock | null
+  hibernation: EnvironmentHibernation
   // Aggregated by the board's own query — a per-row fetch would be 30 requests.
   openFindingCount: number
   // Measured against this environment's latest succeeded build, so it moves the
