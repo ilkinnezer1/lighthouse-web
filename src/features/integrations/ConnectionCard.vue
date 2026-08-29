@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { LoaderCircle, TriangleAlert, Unplug } from '@lucide/vue'
+import { KeyRound, LoaderCircle, Unplug } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import GithubMark from './GithubMark.vue'
 import { connectGithub } from './integrations.api'
 import { useDisconnectGithub } from './integrations.queries'
+import { OAUTH_UNCONFIGURED_NOTE, OAUTH_UNCONFIGURED_TITLE } from './integrations.credentials'
 import { relativeTime } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import type { GithubConnection } from '@/types/api'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   AlertDialog,
@@ -25,8 +25,12 @@ import {
 const props = defineProps<{
   connection?: GithubConnection | null
   loading?: boolean
+  // A connect click can only end at a 503 rendered outside the SPA, so when the
+  // server has no OAuth App the button is not offered at all.
   notConfigured?: boolean
 }>()
+
+const emit = defineEmits<{ 'use-token': [] }>()
 
 const disconnect = useDisconnectGithub()
 
@@ -44,11 +48,11 @@ async function onDisconnect() {
   <div class="rounded-xl border border-border bg-card p-5">
     <div class="flex items-center gap-3">
       <div class="flex size-10 items-center justify-center rounded-lg bg-muted">
-        <GithubMark class="size-5 text-foreground" />
+        <GithubMark class="size-5 text-ink-1" />
       </div>
       <div class="min-w-0 flex-1">
-        <h2 class="text-sm font-medium text-foreground">GitHub</h2>
-        <p class="text-xs text-muted-foreground">Clone and deploy your repositories.</p>
+        <h2 class="text-sm font-medium text-ink-1">GitHub</h2>
+        <p class="text-xs text-ink-3">Clone and deploy your repositories.</p>
       </div>
     </div>
 
@@ -59,53 +63,34 @@ async function onDisconnect() {
       </div>
 
       <div
-        v-else-if="props.notConfigured"
-        class="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3"
-      >
-        <TriangleAlert class="mt-0.5 size-4 shrink-0 text-primary" />
-        <div class="text-sm">
-          <p class="font-medium text-foreground">GitHub integration not configured</p>
-          <p class="mt-0.5 text-muted-foreground">
-            This Lighthouse instance has no GitHub OAuth app set up. Ask an administrator to
-            configure the OAuth client and callback URL.
-          </p>
-        </div>
-      </div>
-
-      <div
         v-else-if="props.connection"
-        class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-background/40 px-4 py-3"
+        class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-sunken px-4 py-3"
       >
         <div class="min-w-0">
           <p class="flex items-center gap-2 text-sm">
-            <span class="text-muted-foreground">Connected as</span>
-            <span class="font-mono font-medium text-foreground">{{
-              props.connection.accountLogin
-            }}</span>
+            <span class="text-ink-3">Connected as</span>
+            <span class="font-mono font-medium text-ink-1">
+              {{ props.connection.accountLogin }}
+            </span>
           </p>
-          <p class="mt-1 text-xs text-muted-foreground">
+          <p class="mt-1 text-xs text-ink-4">
             since {{ relativeTime(props.connection.connectedAt) }}
           </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5">
-          <Badge
+          <span
             v-for="scope in props.connection.scopes"
             :key="scope"
-            variant="secondary"
-            class="font-mono text-[11px]"
+            class="font-mono text-xs text-ink-4"
           >
-            {{ scope }}
-          </Badge>
+            [{{ scope }}]
+          </span>
         </div>
 
         <AlertDialog>
           <AlertDialogTrigger as-child>
-            <Button
-              variant="outline"
-              size="sm"
-              class="ml-auto text-destructive hover:text-destructive"
-            >
+            <Button variant="outline" size="sm" class="ml-auto text-ink-3 hover:text-destructive">
               <Unplug />
               Disconnect
             </Button>
@@ -134,8 +119,24 @@ async function onDisconnect() {
         </AlertDialog>
       </div>
 
+      <div v-else-if="props.notConfigured" class="rounded-lg bg-sunken px-4 py-3.5">
+        <div class="flex items-start gap-2.5">
+          <span class="mt-1.5 size-2 shrink-0 rounded-full bg-signal-idle" aria-hidden="true" />
+          <div class="min-w-0">
+            <p class="text-sm text-ink-1">{{ OAUTH_UNCONFIGURED_TITLE }}</p>
+            <p class="mt-1 max-w-prose text-xs leading-relaxed text-ink-3">
+              {{ OAUTH_UNCONFIGURED_NOTE }}
+            </p>
+            <Button variant="outline" size="sm" class="mt-3" @click="emit('use-token')">
+              <KeyRound />
+              Use an access token
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div v-else class="flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-muted-foreground">
+        <p class="text-sm text-ink-3">
           Connect your GitHub account to browse and deploy your repositories.
         </p>
         <Button @click="connectGithub()">

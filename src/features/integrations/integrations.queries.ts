@@ -7,23 +7,54 @@ import {
 } from '@tanstack/vue-query'
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import {
+  createGitCredential,
+  deleteGitCredential,
   disconnectAtlassian,
   disconnectGithub,
-  getConnections,
+  getIntegrations,
   isNotConnected,
   listRepos,
 } from './integrations.api'
 
 export const integrationKeys = {
   all: ['integrations'] as const,
-  connections: ['integrations', 'connections'] as const,
+  overview: ['integrations', 'connections'] as const,
   repos: (search: string) => ['integrations', 'repos', search] as const,
 }
 
-export function useConnections() {
+export function useIntegrations() {
   return useQuery({
-    queryKey: integrationKeys.connections,
-    queryFn: getConnections,
+    queryKey: integrationKeys.overview,
+    queryFn: getIntegrations,
+  })
+}
+
+/**
+ * Reads the same overview the page already fetched rather than calling
+ * `GET /integrations/git-credentials` a second time — vue-query dedupes on the
+ * key, so a second component asking costs no request.
+ */
+export function useGitCredentials() {
+  const query = useIntegrations()
+  const credentials = computed(() => query.data.value?.gitCredentials ?? [])
+  return Object.assign(query, { credentials })
+}
+
+// Narrow on purpose: the token list rides the overview, and invalidating the
+// whole `integrations` tree would re-run the repo search against GitHub too.
+export function useCreateGitCredential() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: createGitCredential,
+    onSuccess: () => qc.invalidateQueries({ queryKey: integrationKeys.overview }),
+  })
+}
+
+export function useDeleteGitCredential() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: deleteGitCredential,
+    onSuccess: () => qc.invalidateQueries({ queryKey: integrationKeys.overview }),
   })
 }
 

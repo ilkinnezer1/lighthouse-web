@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { refDebounced } from '@vueuse/core'
 import { ExternalLink, Lock, RotateCcw, Search } from '@lucide/vue'
 import { useRepoBrowser } from './integrations.queries'
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const props = defineProps<{ connected: boolean }>()
+const props = defineProps<{ connected: boolean; oauthUnconfigured?: boolean }>()
 const emit = defineEmits<{ deploy: [repo: RepoSummary] }>()
 
 const searchInput = ref('')
@@ -19,6 +19,14 @@ const search = refDebounced(searchInput, 300)
 
 const browser = useRepoBrowser({ search, enabled: () => props.connected })
 const items = browser.items
+
+// Browsing rides the OAuth connection. Without an OAuth App there is nothing to
+// connect to, so pointing at the connect button above would be a dead end.
+const emptyNote = computed(() =>
+  props.oauthUnconfigured
+    ? 'Browsing needs a GitHub connection, which this server cannot offer without an OAuth App. Create a project from a repository URL instead — a saved token covers the private ones.'
+    : 'Connect GitHub above to browse your repositories.',
+)
 </script>
 
 <template>
@@ -46,9 +54,9 @@ const items = browser.items
     <!-- not connected -->
     <div
       v-if="!props.connected || browser.notConnected.value"
-      class="mt-4 rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground"
+      class="mt-4 rounded-xl border border-dashed border-border px-6 py-16 text-center text-sm text-muted-foreground"
     >
-      Connect GitHub above to browse your repositories.
+      <span class="mx-auto block max-w-prose">{{ emptyNote }}</span>
     </div>
 
     <!-- loading (first page) -->
