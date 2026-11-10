@@ -17,6 +17,8 @@ export interface FailureReason {
     | 'builder-missing'
     | 'unknown-strategy'
     | 'health-check'
+    | 'compose-include'
+    | 'compose-env-file'
     | 'cancelled'
     | 'unknown'
   title: string
@@ -26,6 +28,8 @@ export interface FailureReason {
   detail: string
   /** Conflicting paths, when the message carried them. */
   files?: string[]
+  /** The container's last log line, when it died before answering. */
+  lastLog?: string
 }
 
 const MERGE_CONFLICT = /^merge (.+?) into (.+?): conflicts in (.+)$/
@@ -34,7 +38,14 @@ const BUILDER_MISSING = /^(pack|nixpacks|railpack) not found on PATH/
 const UNKNOWN_STRATEGY = /^unknown build strategy/
 const BUILD_FAILED =
   /^(docker build|docker compose build|docker pull|pack build|nixpacks build|railpack build|docker build \(generated\))/
-const HEALTH_TIMEOUT = /^health check timed out after (.+)$/
+// The legacy form trails the Go HTTP client's error (with the container's
+// internal IP) after the duration, so only the duration token is taken.
+const HEALTH_TIMEOUT = /^health check timed out after ([^\s:]+)/
+const HEALTH_EXITED =
+  /^container exited \(code (-?\d+)\) before answering on port (\d+)(?:: ([\s\S]*))?$/
+const HEALTH_SILENT = /^app did not answer on port (\d+) within (\S+)$/
+const COMPOSE_INCLUDE = /compose include could not be resolved/
+const COMPOSE_ENV_FILE = /^env_file (.+?): path .+ (?:escapes workdir|must be relative)$/
 
 /**
  * Classify a deployment's `errorSummary`. Returns null when there is nothing to
@@ -117,12 +128,54 @@ export function failureReason(summary: string | null | undefined): FailureReason
     }
   }
 
+  if (COMPOSE_INCLUDE.test(rest)) {
+    return {
+      kind: 'compose-include',
+      title: 'Compose file includes another repository',
+      hint: 'A project deploys one repository, so `include:` cannot reach a compose file in a sibling checkout. Inline those services into this compose file, or deploy each repository as its own project.',
+      detail: raw,
+    }
+  }
+
+  const envFile = COMPOSE_ENV_FILE.exec(rest)
+  if (envFile) {
+    return {
+      kind: 'compose-env-file',
+      title: `env_file ${envFile[1]} points outside the repository`,
+      hint: 'Lighthouse writes a missing env_file from this environment\u2019s variables, but only inside the checkout. Point env_file at a path within the repository.',
+      detail: raw,
+    }
+  }
+
+  const exited = HEALTH_EXITED.exec(rest)
+  if (exited) {
+    const [, code, port, last] = exited
+    return {
+      kind: 'health-check',
+      title: 'The app crashed on start',
+      hint: `The container exited with code ${code} before it answered on port ${port}. The last thing it logged is below; open the runtime log for the rest.`,
+      detail: raw,
+      lastLog: last?.trim() || undefined,
+    }
+  }
+
+  const silent = HEALTH_SILENT.exec(rest)
+  if (silent) {
+    const [, port, within] = silent
+    return {
+      kind: 'health-check',
+      title: `The app never answered on port ${port}`,
+      hint: `The container kept running, but nothing answered on port ${port} within ${within}. Check that the app listens on that port on 0.0.0.0 (not localhost), or whether it needs longer to boot.`,
+      detail: raw,
+    }
+  }
+
   const timeout = HEALTH_TIMEOUT.exec(rest)
   if (timeout) {
     return {
       kind: 'health-check',
-      title: `Health check timed out after ${timeout[1]}`,
-      hint: 'The container started but never answered on its port. Check the runtime log for a crash on boot, and that the app listens on the configured port.',
+      title: 'The app never answered on its port',
+      hint: `Nothing answered within ${timeout[1]}. Check the runtime log for a crash on boot, and that the app listens on the configured port on 0.0.0.0 (not localhost).`,
       detail: raw,
     }
   }

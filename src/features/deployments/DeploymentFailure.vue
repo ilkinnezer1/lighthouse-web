@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Ban, GitMerge, ServerCrash, TriangleAlert } from '@lucide/vue'
+import { Ban, ChevronRight, FileWarning, GitMerge, ServerCrash, TriangleAlert } from '@lucide/vue'
 import { failureReason } from './failureReason'
 
 const props = defineProps<{ summary?: string | null }>()
@@ -15,6 +15,9 @@ const icon = computed(() => {
       return Ban
     case 'builder-missing':
       return ServerCrash
+    case 'compose-include':
+    case 'compose-env-file':
+      return FileWarning
     default:
       return TriangleAlert
   }
@@ -55,15 +58,24 @@ const neutral = computed(() => reason.value?.kind === 'cancelled')
           </li>
         </ul>
 
-        <!-- The recorded line, kept verbatim: the headline is an interpretation
-             of it, and a reader chasing an unclassified failure needs the
-             original most of all. Dropped only when it would repeat the title. -->
-        <p
-          v-if="reason.detail !== reason.title"
-          class="mt-2 break-words font-mono text-xs text-muted-foreground/80"
-        >
-          {{ reason.detail }}
-        </p>
+        <pre
+          v-if="reason.lastLog"
+          class="mt-2 overflow-x-auto rounded-md bg-sunken px-2.5 py-1.5 font-mono text-xs whitespace-pre-wrap break-words text-foreground/90"
+          >{{ reason.lastLog }}</pre>
+
+        <!-- The headline is an interpretation; the recorded line stays one click
+             away for anyone chasing a failure it does not explain. -->
+        <details v-if="reason.detail !== reason.title" class="group mt-2">
+          <summary
+            class="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-muted-foreground transition-colors marker:content-none hover:text-foreground"
+          >
+            <ChevronRight class="size-3 transition-transform group-open:rotate-90" />
+            Details
+          </summary>
+          <p class="mt-1.5 break-words font-mono text-xs text-muted-foreground/80">
+            {{ reason.detail }}
+          </p>
+        </details>
       </div>
     </div>
   </div>
