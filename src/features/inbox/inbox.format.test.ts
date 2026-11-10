@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   groupHeadline,
   interrupts,
+  notificationDetail,
   isUnread,
   notificationHeadline,
   notificationMeta,
@@ -235,5 +236,37 @@ describe('notificationMeta', () => {
 
   it('leaves no dangling separator when the age is empty', () => {
     expect(notificationMeta(notification(), '')).toBe('')
+  })
+})
+
+describe('notificationDetail', () => {
+  it('reduces a failed deploy to its classified title, not the raw worker error', () => {
+    const n = notification({
+      body: 'health_check: health check timed out after 30s: Get "http://172.25.0.9:8080/": context deadline exceeded (Client.Timeout exceeded while awaiting headers)',
+    })
+    expect(notificationDetail(n)).toBe('The app never answered on its port')
+  })
+
+  it('reads the newer health check wording', () => {
+    expect(
+      notificationDetail(
+        notification({
+          body: 'health_check: container exited (code 1) before answering on port 8080: boom',
+        }),
+      ),
+    ).toBe('The app crashed on start')
+  })
+
+  it('drops an unclassified failure rather than echoing it', () => {
+    expect(notificationDetail(notification({ body: 'setup: something new' }))).toBeNull()
+    expect(notificationDetail(notification({ body: null }))).toBeNull()
+  })
+
+  it('passes other kinds through unchanged', () => {
+    const n = notification({
+      kind: 'lock.overridden',
+      body: 'Ana deployed to staging while you held the lock.',
+    })
+    expect(notificationDetail(n)).toBe('Ana deployed to staging while you held the lock.')
   })
 })
