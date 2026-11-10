@@ -101,6 +101,10 @@ export type DatabaseStatus = 'PROVISIONING' | 'READY' | 'FAILED'
 
 export type SnapshotStatus = 'PENDING' | 'READY' | 'FAILED'
 
+export type SnapshotOrigin = 'DUMP' | 'IMPORT'
+
+export type ImportStatus = 'UPLOADING' | 'RESTORING' | 'SUCCEEDED' | 'FAILED'
+
 export type CreateDatabaseMode =
   'attach-existing' | 'create-empty' | 'copy' | 'create-from-snapshot'
 
@@ -745,6 +749,9 @@ export interface DatabaseSnapshot {
   // Taken by a BackupSchedule rather than a person. Only these are pruned by
   // retention.
   automatic: boolean
+  origin: SnapshotOrigin
+  fileName: string | null
+  importStatus: ImportStatus | null
   createdAt: string
 }
 

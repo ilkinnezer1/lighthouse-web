@@ -13,6 +13,8 @@ import {
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import BackupScheduleControl from '@/features/backup-schedules/BackupScheduleControl.vue'
+import { useCan } from '@/features/orgs/useCan'
+import ImportDumpDialog from './ImportDumpDialog.vue'
 import { useDatabase, useDeleteDatabase } from './databases.queries'
 import {
   useCreateSnapshot,
@@ -22,7 +24,13 @@ import {
   useUpdateSnapshot,
 } from './snapshots.queries'
 import StatusBadge from './StatusBadge.vue'
-import { databaseDisplay, snapshotTone, titleCase } from './databases.status'
+import { databaseDisplay } from './databases.status'
+import {
+  isImportInFlight,
+  snapshotDisplay,
+  snapshotFailed,
+  supportsImport,
+} from './snapshots.import'
 import type { DatabaseSnapshot } from '@/types/api'
 import { relativeTime } from '@/lib/time'
 import { formatBytes } from '@/lib/utils'
@@ -68,6 +76,19 @@ const createSnapshot = useCreateSnapshot(() => props.databaseId)
 const restoreSnapshot = useRestoreSnapshot(() => props.databaseId)
 const deleteSnapshot = useDeleteSnapshot(() => props.databaseId)
 const markBaseline = useUpdateSnapshot(() => props.databaseId)
+
+const canRestore = useCan('snapshots.restore')
+const canImport = computed(() => canRestore.value && !!db.value && supportsImport(db.value.type))
+const importRunning = computed(() => snapshots.value?.some(isImportInFlight) ?? false)
+const importBlockedReason = computed(() => {
+  if (!isReady.value) {
+    return db.value?.containerRunning === false
+      ? 'The container is not running — start it to import'
+      : 'Database must be ready'
+  }
+  if (importRunning.value) return 'An import is already running'
+  return undefined
+})
 
 // Toggling off would leave the environment with no reset point, so the anchor
 // only ever promotes — clearing happens by promoting a different snapshot.
@@ -262,23 +283,31 @@ async function onDeleteSnapshot(id: string) {
       <section class="mt-8">
         <div class="flex items-center justify-between gap-4">
           <h2 class="text-sm font-semibold tracking-tight text-foreground">Snapshots</h2>
-          <Button
-            size="sm"
-            variant="outline"
-            :disabled="!isReady || createSnapshot.isPending.value"
-            :title="
-              isReady
-                ? undefined
-                : db.containerRunning === false
-                  ? 'The container is not running — start it to take a snapshot'
-                  : 'Database must be ready'
-            "
-            @click="onCreateSnapshot"
-          >
-            <LoaderCircle v-if="createSnapshot.isPending.value" class="animate-spin" />
-            <Camera v-else />
-            Take snapshot
-          </Button>
+          <div class="flex items-center gap-2">
+            <ImportDumpDialog
+              v-if="canImport"
+              :database="db"
+              :disabled="!!importBlockedReason"
+              :disabled-reason="importBlockedReason"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              :disabled="!isReady || createSnapshot.isPending.value"
+              :title="
+                isReady
+                  ? undefined
+                  : db.containerRunning === false
+                    ? 'The container is not running — start it to take a snapshot'
+                    : 'Database must be ready'
+              "
+              @click="onCreateSnapshot"
+            >
+              <LoaderCircle v-if="createSnapshot.isPending.value" class="animate-spin" />
+              <Camera v-else />
+              Take snapshot
+            </Button>
+          </div>
         </div>
 
         <BackupScheduleControl
@@ -313,10 +342,20 @@ async function onDeleteSnapshot(id: string) {
           class="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border"
         >
           <div v-for="s in snapshots" :key="s.id" class="flex items-center gap-4 bg-card px-4 py-3">
-            <StatusBadge :tone="snapshotTone[s.status]" :label="titleCase(s.status)" />
+            <StatusBadge v-bind="snapshotDisplay(s)" />
             <div class="min-w-0 flex-1">
               <p class="flex items-center gap-2 text-sm text-foreground">
-                <span class="truncate">{{ s.label || relativeTime(s.createdAt) }}</span>
+                <span v-if="s.label" class="truncate">{{ s.label }}</span>
+                <span v-else-if="s.fileName" class="truncate font-mono" :title="s.fileName">{{
+                  s.fileName
+                }}</span>
+                <span v-else class="truncate">{{ relativeTime(s.createdAt) }}</span>
+                <span
+                  v-if="s.origin === 'IMPORT'"
+                  class="shrink-0 rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground"
+                >
+                  imported
+                </span>
                 <span
                   v-if="s.isBaseline"
                   class="shrink-0 rounded-full bg-primary/12 px-2 py-0.5 font-mono text-[10px] font-medium text-primary"
@@ -324,9 +363,16 @@ async function onDeleteSnapshot(id: string) {
                   baseline
                 </span>
               </p>
-              <p class="mt-0.5 text-xs text-muted-foreground">
-                <template v-if="s.label">{{ relativeTime(s.createdAt) }} · </template>
-                {{ s.status === 'READY' ? formatBytes(s.sizeBytes) : (s.errorSummary ?? '—') }}
+              <p
+                v-if="snapshotFailed(s)"
+                class="mt-0.5 line-clamp-3 font-mono text-xs break-words whitespace-pre-wrap text-destructive"
+                :title="s.errorSummary ?? undefined"
+              >
+                {{ s.errorSummary ?? 'Failed without a reason' }}
+              </p>
+              <p v-else class="mt-0.5 text-xs text-muted-foreground">
+                <template v-if="s.label || s.fileName">{{ relativeTime(s.createdAt) }} · </template>
+                {{ s.status === 'READY' ? formatBytes(s.sizeBytes) : '—' }}
               </p>
             </div>
 
@@ -349,7 +395,7 @@ async function onDeleteSnapshot(id: string) {
                   variant="ghost"
                   size="icon-sm"
                   title="Restore in place"
-                  :disabled="s.status !== 'READY' || !isReady"
+                  :disabled="s.status !== 'READY' || !isReady || isImportInFlight(s)"
                 >
                   <Undo2 />
                 </Button>
