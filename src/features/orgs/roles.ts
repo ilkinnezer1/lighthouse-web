@@ -33,6 +33,7 @@ export type Capability =
   | 'deploy'
   | 'env.manage'
   | 'exec'
+  | 'snapshots.restore'
   | 'project.delete'
   | 'project.transfer'
   | 'members.manage'
@@ -44,7 +45,7 @@ export type Capability =
   | 'org.transfer'
 
 const READ: Capability[] = ['read']
-const WRITE: Capability[] = ['project.create', 'deploy', 'env.manage', 'exec']
+const WRITE: Capability[] = ['project.create', 'deploy', 'env.manage', 'exec', 'snapshots.restore']
 const ADMIN: Capability[] = [
   'project.delete',
   'project.transfer',

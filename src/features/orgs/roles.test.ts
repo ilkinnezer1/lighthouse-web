@@ -17,6 +17,7 @@ const ALL_CAPS: Capability[] = [
   'deploy',
   'env.manage',
   'exec',
+  'snapshots.restore',
   'project.delete',
   'project.transfer',
   'members.manage',
@@ -42,7 +43,14 @@ describe('roleCan', () => {
   })
 
   it('adds the write tier for a Member', () => {
-    expect(capsOf('MEMBER')).toEqual(['read', 'project.create', 'deploy', 'env.manage', 'exec'])
+    expect(capsOf('MEMBER')).toEqual([
+      'read',
+      'project.create',
+      'deploy',
+      'env.manage',
+      'exec',
+      'snapshots.restore',
+    ])
   })
 
   it('withholds destructive and org-management tiers from a Member', () => {

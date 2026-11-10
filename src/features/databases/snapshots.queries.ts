@@ -3,12 +3,14 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import {
   createSnapshot,
   deleteSnapshot,
+  importDump,
   listSnapshots,
   resetEnvironment,
   restoreSnapshot,
   updateSnapshot,
 } from './snapshots.api'
 import { isSnapshotPending } from './databases.status'
+import { isImportInFlight } from './snapshots.import'
 import { databaseKeys } from './databases.queries'
 
 export const snapshotKeys = {
@@ -27,9 +29,11 @@ export function useSnapshots(
         (options?.enabled === undefined ? true : toValue(options.enabled)) &&
         Boolean(toValue(databaseId)),
     ),
-    // Poll while any snapshot is still being captured (worker dump → MinIO).
+    // Poll while a dump is still being captured or an import is still loading.
     refetchInterval: (query) =>
-      query.state.data?.some((s) => isSnapshotPending(s.status)) ? 4000 : false,
+      query.state.data?.some((s) => isSnapshotPending(s.status) || isImportInFlight(s))
+        ? 4000
+        : false,
     refetchIntervalInBackground: true,
   })
 }
@@ -39,6 +43,20 @@ export function useCreateSnapshot(databaseId: MaybeRefOrGetter<string>) {
   return useMutation({
     mutationFn: () => createSnapshot(toValue(databaseId)),
     onSuccess: () =>
+      qc.invalidateQueries({ queryKey: snapshotKeys.byDatabase(toValue(databaseId)) }),
+  })
+}
+
+export function useImportDump(databaseId: MaybeRefOrGetter<string>) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: {
+      file: File
+      onProgress?: (loaded: number, total: number) => void
+      signal?: AbortSignal
+    }) => importDump(toValue(databaseId), vars.file, vars),
+    // A rejected or aborted upload can still leave a FAILED row behind.
+    onSettled: () =>
       qc.invalidateQueries({ queryKey: snapshotKeys.byDatabase(toValue(databaseId)) }),
   })
 }
