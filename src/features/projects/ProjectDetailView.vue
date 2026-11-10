@@ -340,6 +340,7 @@ async function onTransferred(organizationId: string) {
         :project-id="project.id"
         :env-id="primaryEnv.id"
         :default-branch="primaryEnv.branch ?? project.defaultBranch"
+        :github-linked="!!project.providerRepoFullName"
         @deployed="onDeployed"
       />
     </template>
