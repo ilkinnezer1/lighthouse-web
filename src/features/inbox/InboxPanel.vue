@@ -7,7 +7,7 @@ import { shortAgo } from '@/lib/time'
 import { apiErrorMessage } from '@/lib/api'
 import { useMyInvitations } from '@/features/invitations/invitations.queries'
 import { groupNotifications, type InboxGroup } from './inbox.group'
-import { notificationHeadline, notificationMeta } from './inbox.format'
+import { notificationDetail, notificationHeadline, notificationMeta } from './inbox.format'
 import { useMarkAllRead, useMarkRead, useNotificationFeed } from './inbox.queries'
 import InboxRow from './InboxRow.vue'
 import InboxInvitationRow from './InboxInvitationRow.vue'
@@ -140,7 +140,7 @@ function onToggle(group: InboxGroup) {
             <InboxRow
               :kind="group.kind"
               :headline="group.headline"
-              :detail="group.items.length === 1 ? group.items[0].body : null"
+              :detail="group.items.length === 1 ? notificationDetail(group.items[0]) : null"
               :meta="metaFor(group)"
               :unread="group.unread"
             />
@@ -169,7 +169,7 @@ function onToggle(group: InboxGroup) {
             v-else
             :kind="group.kind"
             :headline="group.headline"
-            :detail="group.items.length === 1 ? group.items[0].body : null"
+            :detail="group.items.length === 1 ? notificationDetail(group.items[0]) : null"
             :meta="metaFor(group)"
             :unread="group.unread"
           />
@@ -186,7 +186,7 @@ function onToggle(group: InboxGroup) {
                   nested
                   :kind="item.kind"
                   :headline="notificationHeadline(item)"
-                  :detail="item.body"
+                  :detail="notificationDetail(item)"
                   :meta="notificationMeta(item, shortAgo(item.createdAt, now))"
                   :unread="!item.readAt"
                 />
@@ -196,7 +196,7 @@ function onToggle(group: InboxGroup) {
                 nested
                 :kind="item.kind"
                 :headline="notificationHeadline(item)"
-                :detail="item.body"
+                :detail="notificationDetail(item)"
                 :meta="notificationMeta(item, shortAgo(item.createdAt, now))"
                 :unread="!item.readAt"
               />

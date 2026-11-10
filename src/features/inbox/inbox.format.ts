@@ -1,4 +1,5 @@
 import type { AppNotification, NotificationContext } from '@/types/api'
+import { failureReason } from '@/features/deployments/failureReason'
 
 // A row has to read as a sentence, so the headline is derived from `kind` +
 // `context` rather than shown verbatim. The server's `title` is the fallback,
@@ -135,4 +136,15 @@ export function notificationMeta(n: AppNotification, ago: string): string {
   if (sha) parts.push(sha)
   if (ago) parts.push(ago)
   return parts.join(' · ')
+}
+
+/**
+ * The line under a headline. A failed deploy's body is the worker's raw error,
+ * so it is reduced to the classified title; an unclassified one adds nothing
+ * past "failed" and is left to the deployment page.
+ */
+export function notificationDetail(n: AppNotification): string | null {
+  if (n.kind !== 'deploy.failed') return n.body
+  const reason = failureReason(n.body)
+  return reason && reason.kind !== 'unknown' ? reason.title : null
 }

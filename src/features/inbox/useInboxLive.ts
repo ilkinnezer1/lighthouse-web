@@ -3,7 +3,12 @@ import { useRouter } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
 import { getNotificationsSocket } from '@/lib/socket'
-import { interrupts, notificationHeadline, notificationTone } from './inbox.format'
+import {
+  interrupts,
+  notificationDetail,
+  notificationHeadline,
+  notificationTone,
+} from './inbox.format'
 import { inboxKeys, useMarkRead, useReceiveNotification } from './inbox.queries'
 import type { NotificationCreatedEvent } from '@/types/api'
 
@@ -39,7 +44,7 @@ export function useInboxLive() {
 
     const notify = notificationTone(notification.kind) === 'error' ? toast.error : toast.warning
     notify(notificationHeadline(notification), {
-      description: notification.body ?? undefined,
+      description: notificationDetail(notification) ?? undefined,
       action: notification.link
         ? {
             label: 'View',
