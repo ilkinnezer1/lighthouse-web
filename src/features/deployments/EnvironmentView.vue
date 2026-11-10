@@ -310,7 +310,8 @@ const tabsWithCounts = computed(() =>
       v-model:open="showDeploy"
       :project-id="projectId"
       :env-id="envId"
-      :default-branch="env?.branch ?? null"
+      :default-branch="env?.branch ?? project?.defaultBranch ?? null"
+      :github-linked="!!project?.providerRepoFullName"
       @deployed="onDeployed"
     />
   </PageShell>

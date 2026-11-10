@@ -13,6 +13,7 @@ import { toBranchMetaMap } from '@/features/projects/branchMeta'
 import { apiErrorMessage } from '@/lib/api'
 import type { Deployment, EnvironmentLock, MergeCheckResult } from '@/types/api'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -29,11 +30,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const props = defineProps<{
-  projectId: string
-  envId: string
-  defaultBranch: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    projectId: string
+    envId: string
+    defaultBranch: string | null
+    githubLinked?: boolean
+  }>(),
+  { githubLinked: true },
+)
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ deployed: [deployment: Deployment] }>()
 
@@ -57,7 +62,7 @@ const advanced = ref(false)
 
 const branchesQuery = useProjectBranches(() => props.projectId, {
   base: () => sourceBranch.value || undefined,
-  enabled: () => open.value,
+  enabled: () => open.value && props.githubLinked,
 })
 const branches = computed(() => branchesQuery.data.value ?? [])
 const branchError = computed(() =>
@@ -155,15 +160,21 @@ function onDeployAnyway() {
       <DialogHeader>
         <DialogTitle>Deploy</DialogTitle>
         <DialogDescription>
-          Pick the source branch to build, and optionally merge feature branches into it first.
+          <template v-if="githubLinked">
+            Pick the source branch to build, and optionally merge feature branches into it first.
+          </template>
+          <template v-else>Pick the source branch to build.</template>
         </DialogDescription>
       </DialogHeader>
 
       <div class="grid gap-4 py-1">
         <div class="grid gap-2">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-foreground">Source branch</span>
+            <label for="deploy-source-branch" class="text-sm font-medium text-foreground">
+              Source branch
+            </label>
             <button
+              v-if="githubLinked"
               type="button"
               class="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               :disabled="branchesQuery.isRefreshing.value || branchesQuery.isPending.value"
@@ -176,23 +187,41 @@ function onDeployAnyway() {
               Fetch
             </button>
           </div>
-          <Select v-model="sourceBranch" :disabled="branchesQuery.isPending.value || !!branchError">
-            <SelectTrigger class="w-full font-mono">
-              <SelectValue :placeholder="defaultBranch ?? 'Select a branch'" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="b in branches" :key="b.name" :value="b.name" class="font-mono">
-                {{ b.name }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <p v-if="branchError" class="text-xs text-destructive">{{ branchError }}</p>
-          <p v-else class="text-xs text-muted-foreground">
-            Deploys the latest commit on this branch.
-          </p>
+          <template v-if="!githubLinked">
+            <Input
+              id="deploy-source-branch"
+              v-model.trim="sourceBranch"
+              class="font-mono"
+              :placeholder="defaultBranch ?? 'main'"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="text-xs text-muted-foreground">
+              Branch list needs a GitHub repository — type the branch name.
+            </p>
+          </template>
+          <template v-else>
+            <Select
+              v-model="sourceBranch"
+              :disabled="branchesQuery.isPending.value || !!branchError"
+            >
+              <SelectTrigger id="deploy-source-branch" class="w-full font-mono">
+                <SelectValue :placeholder="defaultBranch ?? 'Select a branch'" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="b in branches" :key="b.name" :value="b.name" class="font-mono">
+                  {{ b.name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="branchError" class="text-xs text-destructive">{{ branchError }}</p>
+            <p v-else class="text-xs text-muted-foreground">
+              Deploys the latest commit on this branch.
+            </p>
+          </template>
         </div>
 
-        <div class="grid gap-2">
+        <div v-if="githubLinked" class="grid gap-2">
           <button
             v-if="!advanced"
             type="button"
